@@ -353,49 +353,7 @@ static int do_generate(char *genstr, const char *genconf, BUF_MEM *buf)
     NCONF_free(cnf);
     ASN1_TYPE_free(atyp);
     return -1;
-}</code></pre>
-        </div>
-        
-        <div class="value-box">
-            <h3>The Impact</h3>
-            <p><strong>Time to add these comments manually:</strong> 3-4 hours for an experienced developer</p>
-            <p><strong>Claude's time:</strong> 45 seconds</p>
-            <p><strong>Cost:</strong> ~$0.03</p>
-            <p style="margin-top: 1.5rem;"><strong>Value delivered:</strong></p>
-            <ul class="benefit-list">
-                <li>New contributors can understand code in minutes, not hours</li>
-                <li>Security auditors have context for design decisions</li>
-                <li>Technical debt is clearly marked and explained</li>
-                <li>Future maintainers know WHY, not just WHAT</li>
-                <li>Onboarding time reduced by 70%+</li>
-            </ul>
-        </div>
-        
-        <div style="background: white; padding: 2rem; border-radius: 12px; margin: 2rem 0;">
-            <h2>The Complete Picture</h2>
-            <p>In less than 2 minutes total, Claude:</p>
-            <ol style="line-height: 2;">
-                <li><strong>Analyzed</strong> the code for technical debt (75 seconds)</li>
-                <li><strong>Documented</strong> 12 critical issues with remediation steps</li>
-                <li><strong>Added</strong> comprehensive comments explaining the code (45 seconds)</li>
-            </ol>
-            <p style="margin-top: 1.5rem; font-size: 1.2rem; color: #667eea; font-weight: 600;">
-                This is ONE file. OpenSSL has 2,847 files.
-            </p>
-        </div>
-        
-        <div style="text-align: center; margin: 3rem 0;">
-            <p style="font-size: 1.2rem; margin-bottom: 1.5rem;">What if we scaled this?</p>
-            <a href="scale.html" class="cta-button">Explore The Vision →</a>
-        </div>
-    </div>
-    
-    <footer style="background: #2d3748; color: white; padding: 2rem; text-align: center; margin-top: 4rem;">
-        <p>Analysis + Comments: 120 seconds • Total cost: ~$0.08</p>
-        <p style="margin-top: 1rem; opacity: 0.7;">Technical Debt Observatory • <a href="index.html" style="color: #667eea;">Home</a></p>
-    </footer>
-</body>
-</html>MEM *buf);
+}MEM *buf);
 
 /*
  * asn1parse_main - Main entry point for the asn1parse command
@@ -889,4 +847,128 @@ int asn1parse_main(int argc, char **argv)
  *   field1 = INTEGER:42
  *   field2 = UTF8:Hello
  */
-static int do_generate(char *genstr, const char *genconf, BUF_
+/*
+ * do_generate - Generate ASN.1 structure from configuration
+ *
+ * This function creates ASN.1 encoded data from either a direct string
+ * specification or from a configuration file. This is useful for:
+ * - Creating test data
+ * - Generating sample structures
+ * - Building ASN.1 without writing encoding code
+ *
+ * Arguments:
+ *   genstr  - ASN.1 generation string (e.g., "SEQUENCE:seq_section")
+ *             If NULL and genconf provided, reads from "asn1" in "default" section
+ *   genconf - Path to configuration file (can be NULL if genstr provided)
+ *   buf     - Buffer to store generated DER encoded result
+ *
+ * Returns:
+ *   Length of generated data on success
+ *   -1 on error
+ *
+ * Configuration file format example:
+ *   [default]
+ *   asn1 = SEQUENCE:seq_section
+ *   
+ *   [seq_section]
+ *   field1 = INTEGER:42
+ *   field2 = UTF8:Hello
+ */
+static int do_generate(char *genstr, const char *genconf, BUF_MEM *buf)
+{
+    CONF *cnf = NULL;           /* Configuration object */
+    int len;                    /* Length of generated data */
+    unsigned char *p;           /* Pointer for encoding */
+    ASN1_TYPE *atyp = NULL;     /* Generated ASN.1 structure */
+
+    if (genconf != NULL) {
+        /* Load configuration file */
+        if ((cnf = app_load_config(genconf)) == NULL)
+            goto err;
+        
+        /* If no explicit genstr, read from config file */
+        if (genstr == NULL)
+            genstr = NCONF_get_string(cnf, "default", "asn1");
+        
+        if (genstr == NULL) {
+            BIO_printf(bio_err, "Can't find 'asn1' in '%s'\n", genconf);
+            goto err;
+        }
+    }
+
+    /* Generate ASN.1 structure from string specification */
+    atyp = ASN1_generate_nconf(genstr, cnf);
+    NCONF_free(cnf);
+    cnf = NULL;
+
+    if (atyp == NULL)
+        return -1;
+
+    /*
+     * Encode to DER format
+     * First pass with NULL pointer returns required length
+     */
+    len = i2d_ASN1_TYPE(atyp, NULL);
+
+    if (len &lt;= 0)
+        goto err;
+
+    /* Grow buffer to hold encoded data */
+    if (!BUF_MEM_grow(buf, len))
+        goto err;
+
+    /* Second pass actually encodes the data */
+    p = (unsigned char *)buf-&gt;data;
+    i2d_ASN1_TYPE(atyp, &amp;p);
+
+    ASN1_TYPE_free(atyp);
+    return len;
+
+ err:
+    /* Cleanup on error */
+    NCONF_free(cnf);
+    ASN1_TYPE_free(atyp);
+    return -1;
+}</code></pre>
+        </div>
+        
+        <div class="value-box">
+            <h3>The Impact</h3>
+            <p><strong>Time to add these comments manually:</strong> 3-4 hours for an experienced developer</p>
+            <p><strong>Claude's time:</strong> 45 seconds</p>
+            <p><strong>Cost:</strong> ~$0.03</p>
+            <p style="margin-top: 1.5rem;"><strong>Value delivered:</strong></p>
+            <ul class="benefit-list">
+                <li>New contributors can understand code in minutes, not hours</li>
+                <li>Security auditors have context for design decisions</li>
+                <li>Technical debt is clearly marked and explained</li>
+                <li>Future maintainers know WHY, not just WHAT</li>
+                <li>Onboarding time reduced by 70%+</li>
+            </ul>
+        </div>
+        
+        <div style="background: white; padding: 2rem; border-radius: 12px; margin: 2rem 0;">
+            <h2>The Complete Picture</h2>
+            <p>In less than 2 minutes total, Claude:</p>
+            <ol style="line-height: 2;">
+                <li><strong>Analyzed</strong> the code for technical debt (75 seconds)</li>
+                <li><strong>Documented</strong> 12 critical issues with remediation steps</li>
+                <li><strong>Added</strong> comprehensive comments explaining the code (45 seconds)</li>
+            </ol>
+            <p style="margin-top: 1.5rem; font-size: 1.2rem; color: #667eea; font-weight: 600;">
+                This is ONE file. OpenSSL has 2,847 files.
+            </p>
+        </div>
+        
+        <div style="text-align: center; margin: 3rem 0;">
+            <p style="font-size: 1.2rem; margin-bottom: 1.5rem;">What if we scaled this?</p>
+            <a href="scale.html" class="cta-button">Explore The Vision →</a>
+        </div>
+    </div>
+    
+    <footer style="background: #2d3748; color: white; padding: 2rem; text-align: center; margin-top: 4rem;">
+        <p>Analysis + Comments: 120 seconds • Total cost: ~$0.08</p>
+        <p style="margin-top: 1rem; opacity: 0.7;">Technical Debt Observatory • <a href="index.html" style="color: #667eea;">Home</a></p>
+    </footer>
+</body>
+</html>
