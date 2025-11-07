@@ -233,17 +233,190 @@
  */
 
 /*
+ * ============================================================================
  * ASN1PARSE - OpenSSL ASN.1 Structure Parser and Diagnostic Tool
+ * ============================================================================
  * 
- * This utility parses and displays the structure of ASN.1 encoded data.
- * ASN.1 (Abstract Syntax Notation One) is the encoding used in X.509 
- * certificates, PKCS structures, and many other cryptographic formats.
+ * PURPOSE:
+ *   This utility parses and displays the structure of ASN.1 encoded data.
+ *   ASN.1 (Abstract Syntax Notation One) is the encoding used in X.509 
+ *   certificates, PKCS structures, and many other cryptographic formats.
  *
- * Primary use cases:
+ * PRIMARY USE CASES:
  *   - Debugging certificate and key file formats
  *   - Examining ASN.1 structure of encoded data
  *   - Generating ASN.1 structures from configuration files
  *   - Converting between different encodings (PEM, DER, Base64)
+ *   - Drilling down into nested ASN.1 structures
+ *
+ * ============================================================================
+ * INPUTS AND OUTPUTS
+ * ============================================================================
+ *
+ * COMMAND LINE INPUTS:
+ *   -in <file>         Input file containing ASN.1 data (stdin if not specified)
+ *   -inform <format>   Input format: PEM (default), DER, or B64 (Base64)
+ *   -out <file>        Output file for DER data (optional)
+ *   -offset <n>        Starting byte offset into input file
+ *   -length <n>        Number of bytes to process (0 = all remaining)
+ *   -strparse <n>      Offset to parse nested structure (can be repeated)
+ *   -oid <file>        File containing additional OID definitions
+ *   -genstr <string>   Generate ASN.1 from string specification
+ *   -genconf <file>    Generate ASN.1 from configuration file
+ *   -item <type>       Parse as specific ASN.1 type (e.g., X509, RSAPublicKey)
+ *   -noout             Suppress output display
+ *   -i                 Indent the output for readability
+ *   -dump              Display unknown data in hex format
+ *   -dlimit <n>        Limit hex dump to first N bytes
+ *
+ * FILE INPUTS:
+ *   - ASN.1 encoded data (PEM, DER, or Base64 format)
+ *   - Optional OID definition file (text format)
+ *   - Optional configuration file for ASN.1 generation
+ *
+ * OUTPUTS:
+ *   STDOUT: Human-readable ASN.1 structure breakdown showing:
+ *           - Tag numbers and types (SEQUENCE, INTEGER, etc.)
+ *           - Lengths of each element
+ *           - Hierarchical structure with indentation
+ *           - Hex dump of primitive data (if -dump specified)
+ *           - Offset positions within the file
+ *
+ *   -out file: Raw DER encoded data (if specified)
+ *              Useful for extracting portions of larger structures
+ *
+ *   STDERR: Error messages and OpenSSL error stack
+ *
+ * RETURN VALUES:
+ *   0 = Success
+ *   1 = Error (invalid input, parse failure, file I/O error, etc.)
+ *
+ * EXAMPLES:
+ *   # Parse a PEM certificate
+ *   openssl asn1parse -in cert.pem
+ *
+ *   # Parse DER format with hex dump
+ *   openssl asn1parse -inform DER -in data.der -dump
+ *
+ *   # Extract and parse nested structure at offset 120
+ *   openssl asn1parse -in cert.pem -strparse 120
+ *
+ *   # Drill down through multiple levels
+ *   openssl asn1parse -in cert.pem -strparse 4 -strparse 20
+ *
+ *   # Generate ASN.1 from specification
+ *   openssl asn1parse -genstr "SEQUENCE:seq" -out generated.der
+ *
+ * ============================================================================
+ * VARIABLE DICTIONARY - asn1parse_main()
+ * ============================================================================
+ *
+ * COMMAND LINE & CONFIGURATION:
+ *   argc             [in]  Command line argument count
+ *   argv             [in]  Command line argument array
+ *   prog             [local] Program name for error messages
+ *   o                [local] Current option being processed (OPTION_CHOICE enum)
+ *   infile           [local] Input file path (NULL = stdin)
+ *   oidfile          [local] OID definitions file path
+ *   derfile          [local] Output file path for DER data
+ *   genstr           [local] ASN.1 generation string from command line
+ *   genconf          [local] Config file path for ASN.1 generation
+ *
+ * CONTROL FLAGS:
+ *   informat         [local] Input format: FORMAT_PEM, FORMAT_ASN1, FORMAT_BASE64
+ *   indent           [local] Boolean: indent output (1) or not (0)
+ *   noout            [local] Boolean: suppress output display
+ *   dump             [local] Hex dump control: 0=none, -1=unlimited, >0=limit bytes
+ *   ret              [local] Return code: 0=success, 1=error
+ *
+ * DATA BUFFER MANAGEMENT:
+ *   buf              [local] Main memory buffer (BUF_MEM*) for holding all data
+ *   str              [local] Pointer to actual data bytes (unsigned char*)
+ *   num              [local] Total number of bytes of data (long)
+ *   offset           [local] Starting offset into data for parsing
+ *   length           [local] Number of bytes to parse (0 = all remaining)
+ *
+ * BIO (I/O) STREAMS:
+ *   in               [local] Input BIO stream (file or stdin)
+ *   b64              [local] Base64 decoding filter BIO (if needed)
+ *   derout           [local] Output BIO stream for DER data (if -out specified)
+ *
+ * PEM FORMAT PARSING:
+ *   name             [local] PEM label (e.g., "CERTIFICATE", "PRIVATE KEY")
+ *   header           [local] PEM header lines (metadata)
+ *
+ * ASN.1 PARSING:
+ *   at               [local] Current ASN.1 structure being parsed (ASN1_TYPE*)
+ *   it               [local] ASN.1 item type for typed parsing (ASN1_ITEM*)
+ *   ctmpbuf          [local] Const pointer for d2i parsing functions
+ *
+ * STRPARSE (NESTED STRUCTURE DRILLING):
+ *   osk              [local] Stack of strparse offset strings (STACK_OF(OPENSSL_STRING)*)
+ *   tmpbuf           [local] Temporary pointer during strparse iteration
+ *   tmplen           [local] Temporary length during strparse iteration
+ *
+ * LOOP VARIABLES:
+ *   i                [local] General purpose loop counter / bytes read
+ *   j                [local] Parsed strparse offset value
+ *
+ * ============================================================================
+ * VARIABLE DICTIONARY - do_generate()
+ * ============================================================================
+ *
+ * FUNCTION PARAMETERS:
+ *   genstr           [in]  ASN.1 generation string (e.g., "SEQUENCE:section")
+ *   genconf          [in]  Configuration file path (or NULL)
+ *   buf              [out] Buffer to receive generated DER data
+ *
+ * LOCAL VARIABLES:
+ *   cnf              [local] Configuration file object (CONF*)
+ *   atyp             [local] Generated ASN.1 structure (ASN1_TYPE*)
+ *   len              [local] Length of DER encoded output
+ *   p                [local] Pointer for DER encoding operation
+ *
+ * RETURN VALUE:
+ *   Positive integer: Length of generated DER data (success)
+ *   -1: Error occurred
+ *
+ * ============================================================================
+ * MEMORY MANAGEMENT NOTES:
+ * ============================================================================
+ *
+ * ALLOCATED RESOURCES (must be freed at 'end' label):
+ *   - buf: BUF_MEM buffer (freed by BUF_MEM_free)
+ *   - in, b64, derout: BIO streams (freed by BIO_free)
+ *   - name, header: PEM strings (freed by OPENSSL_free)
+ *   - at: ASN1_TYPE structure (freed by ASN1_TYPE_free)
+ *   - osk: String stack (freed by sk_OPENSSL_STRING_free)
+ *
+ * SPECIAL CASES:
+ *   - str: May point into buf->data (PEM path) or be separately allocated
+ *          Only freed via BUF_MEM_free(buf)
+ *   - tmpbuf: Points into 'at' structure's internal data during strparse
+ *             Not separately freed (lifetime tied to 'at')
+ *
+ * ERROR HANDLING:
+ *   All error paths use 'goto end' to ensure proper cleanup
+ *   This is a classic C pattern for resource management
+ *
+ * ============================================================================
+ * TECHNICAL DEBT MARKERS:
+ * ============================================================================
+ *
+ * Throughout this code, you'll see comments marked "TECHNICAL DEBT"
+ * These indicate known issues that should be addressed:
+ *
+ * 1. Unchecked strtol() calls - No error handling for integer conversions
+ * 2. Integer overflow checks after operations - Should be before
+ * 3. Uninitialized variables - Some loop counters not initialized
+ * 4. Type mixing - Signed/unsigned integer comparisons
+ * 5. Magic numbers - Unexplained constants like "BUFSIZ * 8"
+ * 6. "Evil" pointer manipulation - Direct access to internal structures
+ * 7. Goto-heavy control flow - Makes code harder to follow
+ *
+ * See full analysis at: [your-project-url]
+ *
+ * ============================================================================
  */
 
 #include &lt;stdio.h&gt;
