@@ -994,58 +994,321 @@ int asn1parse_main(int argc, char **argv)
 }
 
 /*
- * do_generate - Generate ASN.1 structure from configuration
+ * ============================================================================
+ * do_generate - Generate ASN.1 Structure from Configuration
+ * ============================================================================
  *
- * This function creates ASN.1 encoded data from either a direct string
- * specification or from a configuration file. This is useful for:
- * - Creating test data
- * - Generating sample structures
- * - Building ASN.1 without writing encoding code
+ * PURPOSE:
+ *   Creates ASN.1 encoded data from either a direct string specification
+ *   or from a configuration file. This allows building complex ASN.1
+ *   structures without writing manual encoding code.
  *
- * Arguments:
- *   genstr  - ASN.1 generation string (e.g., "SEQUENCE:seq_section")
- *             If NULL and genconf provided, reads from "asn1" in "default" section
- *   genconf - Path to configuration file (can be NULL if genstr provided)
- *   buf     - Buffer to store generated DER encoded result
+ * FUNCTION SIGNATURE:
+ *   static int do_generate(char *genstr, const char *genconf, BUF_MEM *buf)
  *
- * Returns:
- *   Length of generated data on success
- *   -1 on error
+ * ============================================================================
+ * INPUTS
+ * ============================================================================
  *
- * Configuration file format example:
+ * PARAMETERS:
+ *   genstr  [in/optional]  ASN.1 generation string specification
+ *                          Examples: "SEQUENCE:seq_section"
+ *                                   "INTEGER:42"
+ *                                   "UTF8:Hello World"
+ *                          If NULL and genconf provided, reads from config
+ *                          
+ *   genconf [in/optional]  Path to configuration file
+ *                          Must be in OpenSSL CONF format
+ *                          If NULL, genstr must be provided
+ *                          
+ *   buf     [out]          Buffer to store generated DER encoded result
+ *                          Must be pre-allocated (BUF_MEM_new)
+ *                          Function will grow buffer as needed
+ *
+ * CONFIGURATION FILE FORMAT:
  *   [default]
- *   asn1 = SEQUENCE:seq_section
+ *   asn1 = SEQUENCE:my_sequence    # Points to the structure definition
  *   
- *   [seq_section]
- *   field1 = INTEGER:42
- *   field2 = UTF8:Hello
- */
-/*
- * do_generate - Generate ASN.1 structure from configuration
+ *   [my_sequence]
+ *   field1 = INTEGER:42            # Integer field with value 42
+ *   field2 = UTF8:Hello            # UTF8 string field
+ *   field3 = OCTETSTRING:FORMAT:HEX,0102030405  # Hex byte string
+ *   field4 = SEQUENCE:nested       # Nested sequence
+ *   
+ *   [nested]
+ *   subfield = BOOLEAN:TRUE        # Boolean field
  *
- * This function creates ASN.1 encoded data from either a direct string
- * specification or from a configuration file. This is useful for:
- * - Creating test data
- * - Generating sample structures
- * - Building ASN.1 without writing encoding code
+ * SUPPORTED ASN.1 TYPES:
+ *   INTEGER, BOOLEAN, NULL, OBJECT, OCTETSTRING, BITSTRING,
+ *   UTF8, SEQUENCE, SET, IA5STRING, PRINTABLESTRING, T61STRING,
+ *   UNIVERSALSTRING, BMPSTRING, UTCTIME, GENERALIZEDTIME
  *
- * Arguments:
- *   genstr  - ASN.1 generation string (e.g., "SEQUENCE:seq_section")
- *             If NULL and genconf provided, reads from "asn1" in "default" section
- *   genconf - Path to configuration file (can be NULL if genstr provided)
- *   buf     - Buffer to store generated DER encoded result
+ * ============================================================================
+ * OUTPUTS
+ * ============================================================================
  *
- * Returns:
- *   Length of generated data on success
- *   -1 on error
+ * RETURN VALUE:
+ *   Positive integer (>0):  Length of generated DER data (success)
+ *                           The data is placed in buf->data
+ *                           buf->length is NOT updated (caller's responsibility)
+ *   
+ *   -1:                     Error occurred
+ *                           OpenSSL error stack will contain details
+ *                           buf contents are undefined
  *
- * Configuration file format example:
+ * SIDE EFFECTS:
+ *   - buf->data:   Contains DER encoded ASN.1 structure (on success)
+ *   - buf->max:    May be increased if buffer was grown
+ *   - Error stack: Populated on failure (use ERR_print_errors)
+ *
+ * ============================================================================
+ * VARIABLE DICTIONARY
+ * ============================================================================
+ *
+ * FUNCTION PARAMETERS:
+ *   genstr           [in]      ASN.1 generation string specification
+ *                              NULL = read from genconf file
+ *                              
+ *   genconf          [in]      Configuration file path
+ *                              NULL = use genstr directly
+ *                              
+ *   buf              [in/out]  Buffer for DER output
+ *                              IN:  Pre-allocated, possibly empty
+ *                              OUT: Contains DER data, size = return value
+ *
+ * LOCAL VARIABLES:
+ *   cnf              [local]   Configuration file object (CONF*)
+ *                              Loaded from genconf file
+ *                              Freed before return
+ *                              
+ *   atyp             [local]   Generated ASN.1 structure (ASN1_TYPE*)
+ *                              Result of parsing genstr with config
+ *                              Contains the complete ASN.1 tree
+ *                              Freed before return
+ *                              
+ *   len              [local]   Length of DER encoded output (int)
+ *                              First calculated, then used to grow buffer
+ *                              Returned to caller on success
+ *                              
+ *   p                [local]   Pointer for DER encoding (unsigned char*)
+ *                              Points into buf->data
+ *                              Advanced by i2d_ASN1_TYPE during encoding
+ *
+ * ============================================================================
+ * ALGORITHM FLOW
+ * ============================================================================
+ *
+ * STEP 1: Load Configuration (if genconf provided)
+ *   - Open and parse configuration file
+ *   - If genstr is NULL, read "asn1" value from "default" section
+ *   - Validate that genstr is now populated
+ *
+ * STEP 2: Generate ASN.1 Structure
+ *   - Parse genstr according to configuration (or standalone)
+ *   - Build internal ASN1_TYPE tree representation
+ *   - Free configuration file (no longer needed)
+ *   - Validate structure was created successfully
+ *
+ * STEP 3: Calculate Required Buffer Size
+ *   - Call i2d_ASN1_TYPE with NULL pointer
+ *   - Returns length needed for DER encoding
+ *   - Validate length is positive
+ *
+ * STEP 4: Grow Buffer and Encode
+ *   - Grow buf to required length
+ *   - Point p at buf->data
+ *   - Call i2d_ASN1_TYPE to actually encode
+ *   - p is advanced past encoded data (not used again)
+ *
+ * STEP 5: Cleanup and Return
+ *   - Free ASN1_TYPE structure
+ *   - Return length of encoded data
+ *   - On error: cleanup and return -1
+ *
+ * ============================================================================
+ * MEMORY MANAGEMENT
+ * ============================================================================
+ *
+ * ALLOCATED BY THIS FUNCTION:
+ *   cnf:     Allocated by app_load_config()
+ *            Freed by NCONF_free() before return (both paths)
+ *            
+ *   atyp:    Allocated by ASN1_generate_nconf()
+ *            Freed by ASN1_TYPE_free() before return (both paths)
+ *
+ * MANAGED BY CALLER:
+ *   buf:     Caller must allocate before call (BUF_MEM_new)
+ *            Caller must free after use (BUF_MEM_free)
+ *            This function only grows it, doesn't allocate or free
+ *
+ * ERROR PATH CLEANUP:
+ *   Both cnf and atyp are NULL-safe to free
+ *   The 'err' label ensures both are freed even on error
+ *
+ * ============================================================================
+ * ERROR CONDITIONS
+ * ============================================================================
+ *
+ * FAILURE CASES:
+ *   1. Cannot load configuration file (genconf invalid)
+ *      - Returns -1
+ *      - Error: "Can't load config"
+ *      
+ *   2. No "asn1" entry in config default section
+ *      - Returns -1  
+ *      - Error: "Can't find 'asn1' in '<filename>'"
+ *      
+ *   3. ASN.1 generation fails (invalid genstr syntax)
+ *      - Returns -1
+ *      - Error stack populated by ASN1_generate_nconf
+ *      
+ *   4. DER encoding fails (internal OpenSSL error)
+ *      - Returns -1
+ *      - len <= 0 after i2d_ASN1_TYPE
+ *      
+ *   5. Buffer grow fails (out of memory)
+ *      - Returns -1
+ *      - BUF_MEM_grow returns 0
+ *
+ * ERROR HANDLING STRATEGY:
+ *   - All errors goto 'err' label
+ *   - 'err' label ensures proper cleanup
+ *   - OpenSSL error stack preserves detailed error info
+ *   - Caller should call ERR_print_errors() on -1 return
+ *
+ * ============================================================================
+ * USAGE EXAMPLES
+ * ============================================================================
+ *
+ * EXAMPLE 1: Simple Direct Generation
+ *   BUF_MEM *buf = BUF_MEM_new();
+ *   int len = do_generate("INTEGER:42", NULL, buf);
+ *   if (len > 0) {
+ *       // buf->data contains DER encoded INTEGER
+ *       // Use the data...
+ *   }
+ *   BUF_MEM_free(buf);
+ *
+ * EXAMPLE 2: Generate from Config File
+ *   BUF_MEM *buf = BUF_MEM_new();
+ *   int len = do_generate(NULL, "asn1.conf", buf);
+ *   if (len > 0) {
+ *       // buf->data contains DER structure from config
+ *   }
+ *   BUF_MEM_free(buf);
+ *
+ * EXAMPLE 3: Complex Sequence
+ *   Config file:
  *   [default]
- *   asn1 = SEQUENCE:seq_section
+ *   asn1 = SEQUENCE:my_seq
  *   
- *   [seq_section]
- *   field1 = INTEGER:42
- *   field2 = UTF8:Hello
+ *   [my_seq]
+ *   version = INTEGER:1
+ *   name = UTF8:TestCert
+ *   
+ *   Code:
+ *   BUF_MEM *buf = BUF_MEM_new();
+ *   int len = do_generate(NULL, "cert.conf", buf);
+ *
+ * ============================================================================
+ * TECHNICAL NOTES
+ * ============================================================================
+ *
+ * DER ENCODING:
+ *   - DER = Distinguished Encoding Rules
+ *   - Subset of BER (Basic Encoding Rules)
+ *   - Produces canonical, unambiguous encoding
+ *   - Used in X.509 certificates and cryptographic signatures
+ *   - Format: Tag-Length-Value (TLV)
+ *
+ * TWO-PASS ENCODING:
+ *   First pass:  i2d_ASN1_TYPE(atyp, NULL)
+ *                - Calculates required buffer size
+ *                - Does not allocate or write data
+ *                - Returns length needed
+ *   
+ *   Second pass: i2d_ASN1_TYPE(atyp, &p)
+ *                - Actually encodes data
+ *                - Writes to buffer pointed by p
+ *                - Advances p past encoded data
+ *
+ * WHY FREE cnf EARLY:
+ *   Configuration is only needed to build the ASN1_TYPE structure
+ *   Once atyp is created, cnf can be freed immediately
+ *   This reduces memory footprint during encoding phase
+ *
+ * GENSTR SYNTAX:
+ *   "TYPE:value" or "TYPE:section_name"
+ *   TYPE can be primitive (INTEGER, UTF8) or constructed (SEQUENCE, SET)
+ *   For constructed types, value is section name in config file
+ *   For primitive types, value is the actual data
+ *
+ * ============================================================================
+ * SECURITY CONSIDERATIONS
+ * ============================================================================
+ *
+ * INPUT VALIDATION:
+ *   - genstr and genconf are NOT validated for malicious input
+ *   - Caller must ensure inputs are from trusted sources
+ *   - Configuration file parsing could be exploited with crafted input
+ *
+ * BUFFER SAFETY:
+ *   - BUF_MEM_grow() could fail on very large structures
+ *   - No explicit size limit checking
+ *   - Attacker could cause memory exhaustion with deeply nested structures
+ *
+ * RECOMMENDATIONS:
+ *   - Validate genstr syntax before calling
+ *   - Impose maximum size limits for production use
+ *   - Only load configuration files from trusted locations
+ *   - Consider adding timeout for complex ASN.1 generation
+ *
+ * ============================================================================
+ * RELATED FUNCTIONS
+ * ============================================================================
+ *
+ * CALLED BY:
+ *   asn1parse_main() - When -genstr or -genconf options are used
+ *
+ * CALLS:
+ *   app_load_config()       - Load and parse configuration file
+ *   NCONF_get_string()      - Read value from config section
+ *   ASN1_generate_nconf()   - Generate ASN.1 from string + config
+ *   i2d_ASN1_TYPE()         - Encode ASN.1 structure to DER
+ *   BUF_MEM_grow()          - Expand buffer to required size
+ *   NCONF_free()            - Free configuration object
+ *   ASN1_TYPE_free()        - Free ASN.1 structure
+ *
+ * SEE ALSO:
+ *   ASN1_generate_v3()      - Alternative generation function
+ *   d2i_ASN1_TYPE()         - Decode DER to ASN1_TYPE (inverse)
+ *   apps/asn1parse.c        - This file
+ *
+ * ============================================================================
+ * TECHNICAL DEBT
+ * ============================================================================
+ *
+ * ISSUES:
+ *   1. No size limits on generated structures
+ *      - Could allocate gigabytes with malicious config
+ *      - Should add MAX_ASN1_SIZE check
+ *      
+ *   2. Error messages could be more specific
+ *      - "Can't find 'asn1'" doesn't say which section
+ *      - Should include more context in errors
+ *      
+ *   3. cnf is freed early but error path still frees it
+ *      - Works because NCONF_free is NULL-safe
+ *      - But confusing to reader
+ *      - Should set cnf = NULL after first free
+ *
+ * RECOMMENDATIONS:
+ *   - Add configuration validation before generation
+ *   - Implement size limits for production use
+ *   - Improve error message detail
+ *   - Add logging for debugging complex configs
+ *
+ * ============================================================================
  */
 static int do_generate(char *genstr, const char *genconf, BUF_MEM *buf)
 {
