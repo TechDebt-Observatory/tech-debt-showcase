@@ -1,6 +1,3 @@
-### 2. ETHICS.md
-
-```markdown
 # Ethical Considerations
 
 ## Our Commitments
@@ -86,4 +83,3 @@ If security issues are found:
 - Coordinate public disclosure
 - Don't weaponize findings
 - 
-```
