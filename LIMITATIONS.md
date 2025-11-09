@@ -1,6 +1,3 @@
-### 3. LIMITATIONS.md
-
-```markdown
 # Limitations and Caveats
 
 ## What This Is
@@ -244,4 +241,3 @@ If you're unsure whether this analysis is appropriate for your use case, ask you
 ---
 
 **Remember**: This is a research project demonstrating what's possible with AI-assisted analysis. It's a tool to augment human expertise, not replace it.
-```
