@@ -7,7 +7,7 @@ This project uses a standardized prompt to ensure reproducible results across di
 ### Core Prompt
 I have a C program (OpenSSL's apps/asn1parse.c) that I want you to analyze for technical debt and add comprehensive comments.
 
-Please add good comments to the code. I'm an old school programmer who learned on System/370 assembly and COBOL with punched cards.
+Please add good comments to the code. I'm an old school programmer who learned on System/370 assembly with punched cards.
 
 The comments should include:
 
