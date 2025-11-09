@@ -150,3 +150,98 @@ What's "critical" vs "high" depends on:
 ❌ **Legal evidence**: Liability claims  
 ❌ **Without review**: Blind trust in AI  
 ❌ **Vendor comparison**: "Better than X"  
+
+---
+
+## Disclaimers
+
+### No Warranties
+
+This analysis is provided "AS IS" without warranty of any kind:
+- No guarantee of accuracy
+- No guarantee of completeness
+- No guarantee findings are exploitable
+- No guarantee fixes are correct
+
+### Not Professional Advice
+
+This is NOT:
+- Security consulting
+- Legal advice
+- Professional audit
+- Certification
+
+### Use At Your Own Risk
+
+If you use this analysis to make decisions:
+- Validate findings yourself
+- Conduct proper testing
+- Consult professionals
+- We assume no liability
+
+### May Contain Errors
+
+Despite best efforts:
+- AI can make mistakes
+- Validation can miss things
+- Understanding can be wrong
+- Assumptions can be false
+
+**Always verify independently**
+
+---
+
+## How to Use This Responsibly
+
+### ✅ DO:
+- Validate findings manually
+- Treat as starting point
+- Share methodology feedback
+- Report errors you find
+- Use with other tools
+- Apply to learning
+
+### ❌ DON'T:
+- Trust blindly
+- Skip human review
+- Make critical decisions alone
+- Assume 100% accuracy
+- Use for legal/compliance
+- Deploy without testing
+
+---
+
+## Future Improvements
+
+We plan to address limitations:
+
+**Short term**:
+- [ ] Cross-validate with other AIs
+- [ ] Peer review by experts
+- [ ] Test on more files
+- [ ] Automate validation
+
+**Long term**:
+- [ ] Full codebase analysis
+- [ ] Runtime analysis integration
+- [ ] Continuous tracking
+- [ ] Community validation
+
+---
+
+## Questions?
+
+If you're unsure whether this analysis is appropriate for your use case, ask yourself:
+
+1. Am I treating this as the only source of truth? ❌ Don't
+2. Will I validate findings independently? ✅ Do
+3. Is this for learning/exploration? ✅ Appropriate
+4. Is this for critical decisions? ❌ Get professional help
+5. Can I afford to be wrong? ❌ Don't rely on this
+
+**When in doubt, consult a professional.**
+
+---
+
+**Remember**: This is a research project demonstrating what's possible with AI-assisted analysis. It's a tool to augment human expertise, not replace it.
+```
