@@ -1,6 +1,3 @@
-### 5. FAQ.md
-
-```markdown
 # Frequently Asked Questions
 
 ## General Questions
@@ -333,4 +330,3 @@ If project succeeds, proven anonymity works for technical contributions.
 ---
 
 **Still have questions?** Use the contact form on the website.
-```
