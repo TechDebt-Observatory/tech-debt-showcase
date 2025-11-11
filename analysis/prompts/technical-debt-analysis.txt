@@ -1,0 +1,16 @@
+Analyze this C code for technical debt. Focus on:
+
+1. Security vulnerabilities (buffer overflows, integer overflows, unchecked inputs)
+2. Memory safety issues (leaks, use-after-free, uninitialized variables)
+3. Error handling gaps
+4. Type safety problems
+5. Code maintainability issues
+6. Complexity and readability concerns
+
+For each issue found:
+- Specify exact line numbers
+- Explain the problem clearly
+- Assess severity (Critical/High/Medium/Low)
+- Suggest specific remediation
+
+[CODE HERE]

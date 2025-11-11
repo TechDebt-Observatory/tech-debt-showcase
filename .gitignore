@@ -1,0 +1,55 @@
+# API keys and secrets
+tools/api/.env
+tools/api/*_key.txt
+*.key
+.anthropic_api_key
+
+# Analysis working files
+analysis/results/**/draft-*.md
+analysis/results/**/temp-*.json
+analysis/results/**/working-*.txt
+
+# Personal notes (keep these private)
+research/notes/personal/
+project/feedback/private/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Thumbnails
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.bak
+~$*
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Node (if you add any JavaScript tools)
+node_modules/
+npm-debug.log
+
+# Build outputs
+site/build/
+site/dist/
+
+# Environment files
+.env
+.env.local
