@@ -1,0 +1,270 @@
+CORRECTED DOCUMENTATION EXAMPLE - PROPER COMMENT PRESERVATION
+==============================================================
+
+This file shows the CORRECT way to document dhtest.c while preserving
+all original comments exactly. Use this as a template.
+
+=== EXAMPLE 1: dh_test() Function - CORRECTLY DOCUMENTED ===
+
+/**
+@brief Core DH functionality test - validates basic DH operations and API compatibility
+
+@details Algorithm Flow:
+1. Allocate DH object and BIGNUM structures for parameters
+2. Set up small Sophie Germain DH group for testing (p=4079, q=2039, g=3)
+3. Verify DH_check() correctly identifies weak parameters
+4. Test parameter getter functions (DH_get0_pqg, etc.)
+5. Test key setter/getter functions  
+6. Attempt key generation (expect failure due to small modulus)
+7. Test with properly sized parameters
+8. Perform full DH key exchange between two parties
+9. Verify computed shared secrets match
+
+WHY THIS DESIGN:
+Tests the complete DH object lifecycle and all basic operations. Uses intentionally
+weak parameters (p=4079) to verify validation code works, then tests with proper
+parameters to verify key exchange functions correctly.
+
+EDGE CASES:
+- Weak parameters correctly rejected
+- Getter functions handle NULL outputs
+- Key exchange produces matching secrets
+
+@return 1 on success (all validations passed)
+@retval 0 on failure  
+
+@warning Test uses weak DH parameters - DO NOT use in production
+
+@see DH_new(), DH_set0_pqg(), DH_generate_key(), DH_compute_key()
+*/
+static int dh_test(void)
+{
+    DH *dh = NULL;
+    BIGNUM *p = NULL, *q = NULL, *g = NULL;
+    const BIGNUM *p2, *q2, *g2;
+    BIGNUM *priv_key = NULL;
+    const BIGNUM *pub_key2, *priv_key2;
+    BN_GENCB *_cb = NULL;
+    DH *a = NULL;
+    DH *b = NULL;
+    DH *c = NULL;
+    const BIGNUM *ap = NULL, *ag = NULL, *apub_key = NULL;
+    const BIGNUM *bpub_key = NULL, *bpriv_key = NULL;
+    BIGNUM *bp = NULL, *bg = NULL, *cpriv_key = NULL;
+    unsigned char *abuf = NULL;
+    unsigned char *bbuf = NULL;
+    unsigned char *cbuf = NULL;
+    int i, alen, blen, clen, aout, bout, cout;
+    int ret = 0;
+
+    if (!TEST_ptr(dh = DH_new())
+        || !TEST_ptr(p = BN_new())
+        || !TEST_ptr(q = BN_new())
+        || !TEST_ptr(g = BN_new())
+        || !TEST_ptr(priv_key = BN_new()))
+        goto err1;
+
+    /*
+     * I) basic tests
+     */
+
+    /* using a small predefined Sophie Germain DH group with generator 3 */
+    if (!TEST_true(BN_set_word(p, 4079L))
+        || !TEST_true(BN_set_word(q, 2039L))
+        || !TEST_true(BN_set_word(g, 3L))
+        || !TEST_true(DH_set0_pqg(dh, p, q, g)))
+        goto err1;
+
+    /* check fails, because p is way too small */
+    if (!TEST_true(DH_check(dh, &i)))
+        goto err1;
+        
+    /* ... rest of function ... */
+}
+
+NOTE: All original comments preserved EXACTLY:
+- "/*\n * I) basic tests\n */"
+- "/* using a small predefined Sophie Germain DH group with generator 3 */"
+- "/* check fails, because p is way too small */"
+- etc.
+
+
+=== EXAMPLE 2: dh_set_dh_nid_test() - CORRECTLY DOCUMENTED ===
+
+/**
+@brief Test EVP_PKEY_CTX_set_dh_nid() API for setting named DH groups
+
+@details Algorithm Flow:
+1. Create EVP_PKEY_CTX for DH algorithm
+2. Initialize for parameter generation
+3. Set valid FFDHE group (ffdhe2048) - should succeed
+4. Attempt to set invalid NID (EC curve) - should fail gracefully
+5. Validate no SIGSEGV occurred
+
+WHY THIS DESIGN - Regression Test:
+This test exists because of a past bug where setting an EC curve NID on a DH
+context caused segmentation fault instead of returning an error. The test
+validates proper type checking.
+
+SECURITY IMPLICATION:
+Type confusion between EC and DH parameters could lead to using wrong
+cryptographic primitives with mismatched key sizes.
+
+@return 1 on success (valid NID works, invalid NID rejected without crash)
+@retval 0 on failure
+
+@see EVP_PKEY_CTX_set_dh_nid(), EVP_PKEY_paramgen_init()
+*/
+static int dh_set_dh_nid_test(void)
+{
+    int ok = 0;
+    EVP_PKEY_CTX *paramgen_ctx;
+
+    /* Run the test. Success is any time the test does not cause a SIGSEGV interrupt */
+    paramgen_ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_DH, 0);
+    if (!TEST_ptr(paramgen_ctx))
+        goto err;
+    if (!TEST_int_eq(EVP_PKEY_paramgen_init(paramgen_ctx), 1))
+        goto err;
+    /* Tested function is called here */
+    if (!TEST_int_eq(EVP_PKEY_CTX_set_dh_nid(paramgen_ctx, NID_ffdhe2048), 1))
+        goto err;
+    /* Negative test */
+    if (!TEST_int_eq(EVP_PKEY_CTX_set_dh_nid(paramgen_ctx, NID_secp521r1), 0))
+        goto err;
+    /* If we're still running then the test passed. */
+    ok = 1;
+err:
+    EVP_PKEY_CTX_free(paramgen_ctx);
+    return ok;
+}
+
+NOTE: ALL four original comments preserved byte-for-byte:
+1. "/* Run the test. Success is any time the test does not cause a SIGSEGV interrupt */"
+2. "/* Tested function is called here */"
+3. "/* Negative test */"
+4. "/* If we're still running then the test passed. */"
+
+
+=== EXAMPLE 3: dh_get_nid() - CORRECTLY DOCUMENTED ===
+
+/**
+@brief Test DH_get_nid() group identification with manual parameter setting
+
+@details Algorithm Flow:
+1. Create DH object from named group (ffdhe2048)
+2. Extract p, g, q parameters
+3. Create second DH object and manually set same parameters
+4. Verify DH_get_nid() recognizes manually-set params as ffdhe2048
+5. Test that modifying g causes NID_undef return
+6. Test that incorrect q causes NID_undef return
+
+WHY THIS DESIGN:
+DH_get_nid() must correctly identify when manually-set parameters exactly
+match a standardized group. This is important for TLS negotiation and
+security policy enforcement.
+
+SECURITY IMPLICATION:
+Incorrect q values indicate potential small subgroup attacks. DH_get_nid()
+returning NID_undef protects against this by not recognizing tampered
+parameters as standards-compliant.
+
+@return 1 on success (all group recognition logic correct)
+@retval 0 on failure
+
+@see DH_get_nid(), DH_set0_pqg(), BN_dup()
+*/
+static int dh_get_nid(void)
+{
+    int ok = 0;
+    const BIGNUM *p, *q, *g;
+    BIGNUM *pcpy = NULL, *gcpy = NULL, *qcpy = NULL;
+    DH *dh1 = DH_new_by_nid(NID_ffdhe2048);
+    DH *dh2 = DH_new();
+
+    if (!TEST_ptr(dh1)
+        || !TEST_ptr(dh2))
+        goto err;
+
+    /* Set new DH parameters manually using a existing named group's p & g */
+    DH_get0_pqg(dh1, &p, &q, &g);
+    if (!TEST_ptr(p)
+        || !TEST_ptr(q)
+        || !TEST_ptr(g)
+        || !TEST_ptr(pcpy = BN_dup(p))
+        || !TEST_ptr(gcpy = BN_dup(g)))
+        goto err;
+
+    if (!TEST_true(DH_set0_pqg(dh2, pcpy, NULL, gcpy)))
+        goto err;
+    pcpy = gcpy = NULL;
+    /* Test q is set if p and g are provided */
+    if (!TEST_ptr(DH_get0_q(dh2)))
+        goto err;
+
+    /* Test that setting p & g manually returns that it is a named group */
+    if (!TEST_int_eq(DH_get_nid(dh2), NID_ffdhe2048))
+        goto err;
+
+    /* Test that after changing g it is no longer a named group */
+    if (!TEST_ptr(gcpy = BN_dup(BN_value_one())))
+       goto err;
+    if (!TEST_true(DH_set0_pqg(dh2, NULL, NULL, gcpy)))
+       goto err;
+    gcpy = NULL;
+    if (!TEST_int_eq(DH_get_nid(dh2), NID_undef))
+        goto err;
+
+    /* Test that setting an incorrect q results in this not being a named group */
+    if (!TEST_ptr(pcpy = BN_dup(p))
+        || !TEST_ptr(qcpy = BN_dup(q))
+        || !TEST_ptr(gcpy = BN_dup(g))
+        || !TEST_int_eq(BN_add_word(qcpy, 2), 1)
+        || !TEST_true(DH_set0_pqg(dh2, pcpy, qcpy, gcpy)))
+        goto err;
+    pcpy = qcpy = gcpy = NULL;
+    if (!TEST_int_eq(DH_get_nid(dh2), NID_undef))
+        goto err;
+
+    ok = 1;
+err:
+    BN_free(pcpy);
+    BN_free(qcpy);
+    BN_free(gcpy);
+    DH_free(dh2);
+    DH_free(dh1);
+    return ok;
+}
+
+NOTE: ALL five original comments preserved exactly:
+1. "/* Set new DH parameters manually using a existing named group's p & g */"
+2. "/* Test q is set if p and g are provided */"
+3. "/* Test that setting p & g manually returns that it is a named group */"
+4. "/* Test that after changing g it is no longer a named group */"
+5. "/* Test that setting an incorrect q results in this not being a named group */"
+
+
+=== VALIDATION CHECKLIST ===
+
+Before submitting ANY documentation:
+
+✓ Run: grep -n "/\*" original.c > original_comments.txt
+✓ Run: grep -n "/\*" documented.c > new_comments.txt  
+✓ Compare: All original comment text must appear in new file
+✓ Diff check: diff -u original.c documented.c | grep "^-" | grep "/\*"
+  → Should return EMPTY (no removed comments)
+✓ Visual inspection: Check 3-5 functions to verify comments intact
+
+
+=== COMPLETE FILE STRUCTURE ===
+
+The complete dhtest_corrected.c should have:
+
+1. File header (NEW - added documentation)
+2. /* Copyright/license comments */ (ORIGINAL - preserved exactly)
+3. #include directives
+4. Function documentation /** ... */ (NEW - added before each function)
+5. Function code with ALL original /* ... */ comments (ORIGINAL - preserved)
+
+CRITICAL RULE: If you see /* ... */ in original → It MUST appear in documented
+version in the same location with the same text.

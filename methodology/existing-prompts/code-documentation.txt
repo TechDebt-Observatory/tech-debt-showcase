@@ -1,0 +1,11 @@
+Add comprehensive comments to this C code in old-school System/370 style.
+
+Include:
+1. File header with purpose, I/O spec, variable dictionary
+2. Function headers with complete documentation
+3. Inline comments explaining WHY, not just WHAT
+4. Technical debt markers
+5. Security implications
+6. Usage examples
+
+[CODE HERE]

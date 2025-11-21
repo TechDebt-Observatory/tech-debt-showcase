@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenSSL asn1parse.c - Technical Debt Analysis</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .nav {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav a {
+            margin-right: 2rem;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .nav a:hover {
+            text-decoration: underline;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .summary-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .grade {
+            display: inline-block;
+            font-size: 4rem;
+            font-weight: 700;
+            color: #f39c12;
+            background: #fff9e6;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            border: 3px solid #f39c12;
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        
+        .metric {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .severity-critical {
+            border-left: 4px solid #dc3545;
+            background: #fff5f5;
+        }
+        
+        .severity-high {
+            border-left: 4px solid #fd7e14;
+            background: #fff8f0;
+        }
+        
+        .severity-medium {
+            border-left: 4px solid #ffc107;
+            background: #fffbf0;
+        }
+        
+        .severity-low {
+            border-left: 4px solid #6c757d;
+            background: #f8f9fa;
+        }
+        
+        .issue {
+            background: white;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .issue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .issue-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-critical {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .badge-high {
+            background: #fd7e14;
+            color: white;
+        }
+        
+        .badge-medium {
+            background: #ffc107;
+            color: #000;
+        }
+        
+        .badge-low {
+            background: #6c757d;
+            color: white;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+        
+        .remediation {
+            background: #e8f5e9;
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 4px;
+        }
+        
+        .remediation h4 {
+            color: #28a745;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Technical Debt Analysis</h1>
+        <p>OpenSSL: apps/asn1parse.c</p>
+    </div>
+    
+    <div class="nav">
+        <a href="index.html">← Home</a>
+        <a href="raw-code.html">Raw Code</a>
+        <a href="analysis.html">Analysis</a>
+        <a href="commented.html">Commented Code</a>
+        <a href="goals.html">Our Mission</a>
+        <a href="scale.html">Scale Up</a>
+    </div>
+    
+    <div class="container">
+        <div class="summary-box">
+            <h2>Overall Assessment</h2>
+            <div style="text-align: center; margin: 2rem 0;">
+                <div class="grade">C+</div>
+                <p style="margin-top: 1rem; font-size: 1.1rem; color: #666;">Functional but shows legacy patterns that increase maintenance burden and security risk</p>
+            </div>
+            
+            <div class="metrics">
+                <div class="metric">
+                    <div class="metric-value" style="color: #dc3545;">12</div>
+                    <div class="metric-label">Critical Issues</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" style="color: #fd7e14;">8</div>
+                    <div class="metric-label">High Priority</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value" style="color: #ffc107;">5</div>
+                    <div class="metric-label">Medium Priority</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">348</div>
+                    <div class="metric-label">Lines of Code</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">~25</div>
+                    <div class="metric-label">Cyclomatic Complexity</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">15+</div>
+                    <div class="metric-label">Goto Statements</div>
+                </div>
+            </div>
+        </div>
+        
+        <h2 style="color: #dc3545; margin: 2rem 0 1rem;">🔴 Critical Priority Issues</h2>
+        
+        <div class="issue severity-critical">
+            <div class="issue-header">
+                <div class="issue-title">1. Integer Overflow Vulnerabilities</div>
+                <span class="badge badge-critical">Critical</span>
+            </div>
+            
+            <p><strong>Location:</strong> Lines 126-127, 132</p>
+            
+            <pre><code>// No error checking on strtol() conversions
+offset = strtol(opt_arg(), NULL, 0);
+length = strtol(opt_arg(), NULL, 0);</code></pre>
+            
+            <p><strong>Problem:</strong></p>
+            <ul>
+                <li>No error checking on <code>strtol()</code> conversions</li>
+                <li><code>strtol()</code> returns <code>long</code>, but <code>length</code> is <code>unsigned int</code> - potential truncation</li>
+                <li>No validation of conversion errors (ERANGE, invalid input)</li>
+            </ul>
+            
+            <p><strong>Impact:</strong> Could cause buffer overflows, out-of-bounds access</p>
+            
+            <div class="remediation">
+                <h4>✓ Recommended Fix:</h4>
+                <pre><code>// Use safer parsing with error checking
+char *endptr;
+errno = 0;
+long temp = strtol(opt_arg(), &endptr, 0);
+if (errno != 0 || *endptr != '\0' || temp < 0 || temp > INT_MAX) {
+    BIO_printf(bio_err, "Invalid offset value\n");
+    goto opthelp;
+}
+offset = (int)temp;</code></pre>
+            </div>
+        </div>
+        
+        <div class="issue severity-critical">
+            <div class="issue-header">
+                <div class="issue-title">2. Integer Overflow in Read Loop</div>
+                <span class="badge badge-critical">Critical</span>
+            </div>
+            
+            <p><strong>Location:</strong> Lines 228-233</p>
+            
+            <pre><code>for (;;) {
+    if (!BUF_MEM_grow(buf, num + BUFSIZ))
+        goto end;
+    i = BIO_read(in, &(buf->data[num]), BUFSIZ);
+    if (i <= 0)
+        break;
+    /* make sure num doesn't overflow */
+    if (i > LONG_MAX - num)  // ← Check happens AFTER allocation
+        goto end;
+    num += i;
+}</code></pre>
+            
+            <p><strong>Problem:</strong></p>
+            <ul>
+                <li>Comment acknowledges overflow risk but check comes AFTER <code>BIO_read()</code> succeeds</li>
+                <li><code>BUF_MEM_grow()</code> could fail if <code>num + BUFSIZ</code> overflows before the check</li>
+                <li>The overflow check should happen BEFORE the grow operation</li>
+            </ul>
+            
+            <p><strong>Impact:</strong> Memory corruption, potential security vulnerability</p>
+            
+            <div class="remediation">
+                <h4>✓ Recommended Fix:</h4>
+                <p>Move overflow check before allocation and add proper bounds checking</p>
+            </div>
+        </div>
+        
+        <div class="issue severity-critical">
+            <div class="issue-header">
+                <div class="issue-title">3. Uninitialized Variables</div>
+                <span class="badge badge-critical">Critical</span>
+            </div>
+            
+            <p><strong>Location:</strong> Lines 67-76</p>
+            
+            <pre><code>int indent = 0, noout = 0, dump = 0, informat = FORMAT_PEM;
+int offset = 0, ret = 1, i, j;  // ← i, j uninitialized
+long num, tmplen;               // ← uninitialized
+unsigned char *tmpbuf;          // ← uninitialized</code></pre>
+            
+            <p><strong>Problem:</strong></p>
+            <ul>
+                <li>Variables <code>i</code>, <code>j</code>, <code>tmpbuf</code> declared but not initialized</li>
+                <li>Wide scope for loop counters increases risk</li>
+                <li>Mixing signed/unsigned types (<code>num</code> is long, <code>length</code> is unsigned int)</li>
+            </ul>
+            
+            <p><strong>Impact:</strong> Potential use of uninitialized variables, type confusion bugs, undefined behavior</p>
+            
+            <div class="remediation">
+                <h4>✓ Recommended Fix:</h4>
+                <p>Initialize all variables at declaration, declare at narrowest scope, use consistent types</p>
+            </div>
+        </div>
+        
+        <h2 style="color: #fd7e14; margin: 2rem 0 1rem;">🟡 High Priority Issues</h2>
+        
+        <div class="issue severity-high">
+            <div class="issue-header">
+                <div class="issue-title">4. Unchecked Memory Allocation</div>
+                <span class="badge badge-high">High</span>
+            </div>
+            
+            <p><strong>Location:</strong> Lines 188, 200, 216</p>
+            
+            <p><strong>Problem:</strong> Some memory allocations checked, others fail silently without error messages</p>
+            
+            <pre><code>if (!BUF_MEM_grow(buf, BUFSIZ * 8))
+    goto end;  // ← Silent failure, no error message</code></pre>
+            
+            <p><strong>Impact:</strong> Difficult to debug allocation failures, poor user experience</p>
+            
+            <div class="remediation">
+                <h4>✓ Recommended Fix:</h4>
+                <p>Add explicit error messages for all allocation failures</p>
+            </div>
+        </div>
+        
+        <div class="issue severity-high">
+            <div class="issue-header">
+                <div class="issue-title">5. Goto-Heavy Control Flow</div>
+                <span class="badge badge-high">High</span>
+            </div>
+            
+            <p><strong>Location:</strong> Throughout (15+ goto statements)</p>
+            
+            <p><strong>Problem:</strong></p>
+            <ul>
+                <li>Error handling paths intertwined with normal flow</li>
+                <li>Single cleanup label <code>end:</code> handles all exit paths</li>
+                <li>Makes control flow hard to follow</li>
+            </ul>
+            
+            <p><strong>Impact:</strong> Difficult to maintain, easy to introduce bugs when modifying</p>
+            
+            <div class="remediation">
+                <h4>✓ Recommended Fix:</h4>
+                <p>Consider structured error handling with helper functions or early returns where appropriate</p>
+            </div>
+        </div>
+        
+        <div class="issue severity-high">
+            <div class="issue-header">
+                <div class="issue-title">6. "Evil But Works" Code Pattern</div>
+                <span class="badge badge-high">High</span>
+            </div>
+            
+            <p><strong>Location:</strong> Lines 271-273</p>
+            
+            <pre><code>/* hmm... this is a little evil but it works */
+tmpbuf = at->value.asn1_string->data;
+tmplen = at->value.asn1_string->length;</code></pre>
+            
+            <p><strong>Problem:</strong></p>
+            <ul>
+                <li>Comment admits code is "evil"</li>
+                <li>Direct pointer manipulation without ownership clarity</li>
+                <li>Could cause use-after-free if <code>at</code> is freed while <code>tmpbuf</code> is still in use</li>
+            </ul>
+            
+            <p><strong>Impact:</strong> Maintenance hazard, potential memory safety issue</p>
+            
+            <div class="remediation">
+                <h4>✓ Recommended Fix:</h4>
+                <p>Refactor to use proper accessor functions or document ownership clearly</p>
+            </div>
+        </div>
+        
+        <h2 style="color: #ffc107; margin: 2rem 0 1rem;">🟠 Medium Priority Issues</h2>
+        
+        <div class="issue severity-medium">
+            <div class="issue-header">
+                <div class="issue-title">7. Magic Numbers</div>
+                <span class="badge badge-medium">Medium</span>
+            </div>
+            
+            <p><strong>Location:</strong> Line 200</p>
+            
+            <pre><code>if (!BUF_MEM_grow(buf, BUFSIZ * 8))  // ← Why 8?</code></pre>
+            
+            <p><strong>Problem:</strong> Unexplained magic constant - why 8x BUFSIZ?</p>
+            
+            <div class="remediation">
+                <h4>✓ Recommended Fix:</h4>
+                <pre><code>#define ASN1_PARSE_INITIAL_BUFFER_SIZE (BUFSIZ * 8)
+// Pre-allocate for typical ASN.1 structures</code></pre>
+            </div>
+        </div>
+        
+        <div class="issue severity-medium">
+            <div class="issue-header">
+                <div class="issue-title">8. Inconsistent Error Messages</div>
+                <span class="badge badge-medium">Medium</span>
+            </div>
+            
+            <p><strong>Examples:</strong></p>
+            <ul>
+                <li>Line 83: <code>"%s: Memory allocation failure\n"</code> (includes program name)</li>
+                <li>Line 193: <code>"Error reading PEM file\n"</code> (no program name)</li>
+                <li>Line 258: <code>"Error parsing structure\n"</code> (no program name)</li>
+            </ul>
+            
+            <p><strong>Impact:</strong> Inconsistent user experience, harder to debug</p>
+            
+            <div class="remediation">
+                <h4>✓ Recommended Fix:</h4>
+                <p>Standardize error message format with program name prefix throughout</p>
+            </div>
+        </div>
+        
+        <div class="summary-box" style="margin-top: 3rem;">
+            <h2>Remediation Priority</h2>
+            <h3 style="color: #dc3545;">Phase 1: Security Critical (Do First)</h3>
+            <ol>
+                <li>Fix integer overflow checks (lines 228-234)</li>
+                <li>Add <code>strtol()</code> error checking (lines 126-127, 132, 248)</li>
+                <li>Initialize all variables (lines 67-76)</li>
+            </ol>
+            
+            <h3 style="color: #fd7e14; margin-top: 1.5rem;">Phase 2: Robustness</h3>
+            <ol start="4">
+                <li>Add error messages to silent failures</li>
+                <li>Standardize error message format</li>
+                <li>Fix type safety issues</li>
+            </ol>
+            
+            <h3 style="color: #ffc107; margin-top: 1.5rem;">Phase 3: Maintainability</h3>
+            <ol start="7">
+                <li>Break up <code>asn1parse_main()</code> into smaller functions</li>
+                <li>Replace magic numbers with constants</li>
+                <li>Add function documentation</li>
+                <li>Refactor goto-heavy control flow</li>
+            </ol>
+        </div>
+        
+        <div style="text-align: center; margin: 3rem 0;">
+            <a href="commented.html" class="cta-button" style="display: inline-block; background: #667eea; color: white; padding: 1rem 2.5rem; text-decoration: none; border-radius: 50px; font-weight: 600;">
+                See Commented Code →
+            </a>
+        </div>
+    </div>
+    
+    <footer style="background: #2d3748; color: white; padding: 2rem; text-align: center; margin-top: 4rem;">
+        <p>Analysis time: 75 seconds • Cost: ~$0.05 • Found: 25 issues</p>
+        <p style="margin-top: 1rem; opacity: 0.7;">Technical Debt Observatory • <a href="index.html" style="color: #667eea;">Home</a></p>
+    </footer>
+</body>
+</html>

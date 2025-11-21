@@ -1,0 +1,42 @@
+# Private directories - never commit
+case-studies/
+research/
+local-repos/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+build/
+dist/
+
+# Logs
+*.log
+.migration_checkpoint
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Temporary files
+*.tmp
+*.bak

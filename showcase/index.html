@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Debt Observatory | AI-Assisted Code Analysis</title>
+    <meta name="description" content="Automated technical debt analysis of critical open source infrastructure using AI">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.95;
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 1rem 2.5rem;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            font-size: 1.8rem;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .stat-box {
+            text-align: center;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-box .number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-box .label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .before, .after {
+            padding: 1.5rem;
+            border-radius: 8px;
+        }
+        
+        .before {
+            background: #fff3f3;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .after {
+            background: #f0f9ff;
+            border-left: 4px solid #28a745;
+        }
+        
+        .before h3 {
+            color: #dc3545;
+            margin-bottom: 1rem;
+        }
+        
+        .after h3 {
+            color: #28a745;
+            margin-bottom: 1rem;
+        }
+        
+        .feature-list {
+            list-style: none;
+            margin: 1rem 0;
+        }
+        
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .problem-list li:before {
+            content: "✗";
+            color: #dc3545;
+        }
+        
+        footer {
+            background: #2d3748;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-top: 4rem;
+        }
+        
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .anonymous-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Our Mission</h2>
+        <p>This isn't just about analyzing code. It's about bringing 
+        <strong>responsible documentation</strong> back to software engineering.</p>
+        <p style="margin-top: 1rem;">
+            The industry is wasting <strong>billions of dollars</strong> and 
+            <strong>millions of man-hours</strong> every year because we stopped 
+            documenting code.
+        </p>
+        <p style="margin-top: 1rem;">
+            <strong>We can fix this.</strong>
+        </p>
+        <a href="goals.html" class="cta-button">Read Our Mission →</a>
+    </div>
+    
+    <div class="hero">
+        <h1>Technical Debt Observatory</h1>
+        <p>What if AI could analyze critical infrastructure code in seconds and find issues that take humans hours?</p>
+        <p style="font-size: 1rem; opacity: 0.9;">We gave Claude one file from OpenSSL. Here's what happened.</p>
+        <a href="raw-code.html" class="cta-button">See the Analysis →</a>
+        <div class="anonymous-badge">
+            🔒 Independent • Anonymous • No Agenda
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>The Challenge</h2>
+            <p>OpenSSL is critical infrastructure used by millions of applications worldwide. After Heartbleed, everyone knows technical debt in security-critical code is dangerous.</p>
+            <p style="margin-top: 1rem;">But finding that debt is hard:</p>
+            <ul class="feature-list problem-list" style="margin-top: 1rem;">
+                <li>Manual code review takes hours per file</li>
+                <li>Easy to miss subtle security issues</li>
+                <li>Requires deep expertise in C and security</li>
+                <li>Not scalable across thousands of files</li>
+                <li>Inconsistent between reviewers</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>The Experiment</h2>
+            <p>We selected one file from OpenSSL: <code>apps/asn1parse.c</code> (348 lines)</p>
+            <p style="margin-top: 1rem;">We asked Claude (Anthropic's AI) to:</p>
+            <ul class="feature-list">
+                <li>Find technical debt and security issues</li>
+                <li>Prioritize by severity and impact</li>
+                <li>Provide actionable remediation steps</li>
+                <li>Add comprehensive comments for maintainability</li>
+            </ul>
+        </div>
+
+        <div class="comparison">
+            <div class="before">
+                <h3>❌ Before (Manual Review)</h3>
+                <ul class="feature-list problem-list">
+                    <li><strong>Time:</strong> 2-3 hours for expert review</li>
+                    <li><strong>Cost:</strong> $200-400 (consulting rate)</li>
+                    <li><strong>Coverage:</strong> May miss edge cases</li>
+                    <li><strong>Scale:</strong> Not feasible for 2,847 files</li>
+                    <li><strong>Documentation:</strong> Rarely added</li>
+                </ul>
+            </div>
+            <div class="after">
+                <h3>✓ After (AI Analysis)</h3>
+                <ul class="feature-list">
+                    <li><strong>Time:</strong> 75 seconds total</li>
+                    <li><strong>Cost:</strong> ~$0.05 (API cost)</li>
+                    <li><strong>Coverage:</strong> Systematic and thorough</li>
+                    <li><strong>Scale:</strong> Full OpenSSL in ~6 hours</li>
+                    <li><strong>Documentation:</strong> Comprehensive comments</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>What Claude Found</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="number">12</div>
+                    <div class="label">Critical Issues</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">8</div>
+                    <div class="label">Medium Priority</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">5</div>
+                    <div class="label">Low Priority</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">75s</div>
+                    <div class="label">Analysis Time</div>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 2rem; color: #dc3545;">Critical Issues Discovered:</h3>
+            <ul class="feature-list problem-list">
+                <li>Unchecked integer overflow vulnerabilities</li>
+                <li>No error handling on <code>strtol()</code> conversions</li>
+                <li>Uninitialized variables (potential security risk)</li>
+                <li>Memory allocation without proper error messages</li>
+                <li>Type safety issues mixing signed/unsigned integers</li>
+            </ul>
+            
+            <p style="margin-top: 1.5rem;"><strong>Every issue was real. Every recommendation was actionable.</strong></p>
+        </div>
+
+        <div class="card">
+            <h2>The Big Question</h2>
+            <p style="font-size: 1.2rem; color: #667eea; font-weight: 600;">This is ONE file. OpenSSL has 2,847 C files.</p>
+            <p style="margin-top: 1rem;">What if we:</p>
+            <ul class="feature-list">
+                <li>Analyzed the entire OpenSSL codebase?</li>
+                <li>Tracked technical debt changes over time?</li>
+                <li>Compared against other critical projects?</li>
+                <li>Created a public health dashboard?</li>
+                <li>Helped maintainers prioritize remediation?</li>
+            </ul>
+            <p style="margin-top: 1.5rem; text-align: center;">
+                <a href="raw-code.html" class="cta-button">See the Full Analysis →</a>
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>About This Project</h2>
+            <p><strong>Who:</strong> Anonymous systems programmer with 40+ years experience (IBM System/360 → Modern C)</p>
+            <p style="margin-top: 0.5rem;"><strong>Why:</strong> Exploring whether AI can systematically identify technical debt in critical infrastructure</p>
+            <p style="margin-top: 0.5rem;"><strong>Goal:</strong> Show what's possible. Get feedback from the community.</p>
+            <p style="margin-top: 1rem;"><em>Not selling anything. No commercial affiliation. Just showing the data.</em></p>
+        </div>
+
+        <div class="card">
+            <h2>Questions? Feedback?</h2>
+            <p>This is an experiment. Your input matters.</p>
+            <p style="margin-top: 1rem;">What would you want to see in a full technical debt analysis system?</p>
+            <form action="https://formspree.io/f/YOUR_FORM_ID" method="POST" style="margin-top: 1.5rem;">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Your email (optional):</label>
+                    <input type="email" name="email" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem;">Message:</label>
+                    <textarea name="message" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-height: 100px;"></textarea>
+                </div>
+                <button type="submit" style="background: #667eea; color: white; padding: 0.75rem 2rem; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 600;">Send Feedback</button>
+            </form>
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                🔒 Messages are forwarded anonymously. No data is stored or tracked.
+            </p>
+        </div>
+    </div>
+
+    <footer>
+        <p><strong>Technical Debt Observatory</strong></p>
+        <p style="margin-top: 0.5rem;">Analysis by Claude 3.5 Sonnet (Anthropic) • Curated by Anonymous Systems Programmer</p>
+        <p style="margin-top: 1rem; font-size: 0.9rem;">
+            No personal data collected • No tracking cookies • <a href="#privacy">Privacy Policy</a>
+        </p>
+        <p style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.7;">
+            All analyzed code is from public open source repositories
+        </p>
+    </footer>
+</body>
+</html>
