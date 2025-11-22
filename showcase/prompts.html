@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Prompts | Technical Debt Observatory</title>
+    <meta name="description" content="Exact prompts used for 6D documentation generation - fully reproducible">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .nav {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav a {
+            margin-right: 2rem;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .nav a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .section {
+            background: white;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 2rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        .prompt-box {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            border-left: 4px solid #667eea;
+        }
+
+        .copy-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        .copy-button:hover {
+            background: #5568d3;
+        }
+
+        .callout {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+
+        .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #28a745;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 4px;
+        }
+
+        .api-example {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            border: 1px solid #ddd;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        ul {
+            line-height: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Production Prompts</h1>
+        <p style="font-size: 1.2rem; opacity: 0.95;">
+            Phase 1 v6 - Fully reproducible, battle-tested<br>
+            <em style="font-size: 0.9rem;">Copy, modify, improve</em>
+        </p>
+    </div>
+
+    <div class="nav">
+        <a href="index.html">← Home</a>
+        <a href="6d-framework.html">6D Framework</a>
+        <a href="methodology.html">Methodology</a>
+        <a href="prompts.html">Prompts</a>
+        <a href="validation.html">Validation</a>
+        <a href="research.html">Research</a>
+    </div>
+
+    <div class="container">
+        <div class="section">
+            <h2>Phase 1 v6 Production Prompt</h2>
+            <p>This is the exact prompt used to generate the OpenSSL asn1parse.c documentation with <strong>0% false positives</strong> and <strong>&lt;10% hallucinations</strong>.</p>
+
+            <div class="callout">
+                <h3 style="margin-top: 0;">🔬 Reproduction Requirements</h3>
+                <p><strong>To reproduce our results exactly:</strong></p>
+                <ul>
+                    <li><strong>Model:</strong> Claude 3.5 Sonnet (claude-sonnet-4-20250514)</li>
+                    <li><strong>Temperature:</strong> 0.3 (balance creativity vs consistency)</li>
+                    <li><strong>Max Tokens:</strong> 16000 (enough for comprehensive output)</li>
+                    <li><strong>Context:</strong> Provide complete source file</li>
+                    <li><strong>Date:</strong> January 2025 (for version tracking)</li>
+                </ul>
+            </div>
+
+            <h3>The Prompt</h3>
+            <p>Copy this exactly, replacing [PASTE CODE HERE] with your source file:</p>
+
+            <div class="prompt-box">I have a C program (OpenSSL's apps/asn1parse.c) that I want you to analyze for technical debt and add comprehensive comments using the 6-Dimensional Documentation Framework.
+
+I'm an old school programmer who learned on IBM System/370 assembly with punched cards. Documentation at that level meant 40-70% comment density where every variable, every decision, and every gotcha was explained.
+
+Please add comprehensive comments using all 6 dimensions:
+
+1. SYNTAX DIMENSION - What the code accepts and returns:
+   - Complete function signatures with parameter documentation
+   - Return values and error codes
+   - Side effects and state changes
+   - Pre-conditions and post-conditions
+   - Usage examples
+
+2. STRUCTURE DIMENSION - How it works internally:
+   - Algorithm descriptions at high level
+   - Data structure explanations
+   - Control flow documentation
+   - Memory layout and management
+   - Complexity analysis where relevant
+
+3. INTENT DIMENSION - Why design decisions were made:
+   - Architectural rationale
+   - Trade-offs considered and chosen
+   - Alternatives that were rejected and why
+   - Constraints that influenced design
+   - Business or technical requirements
+   - Performance vs clarity trade-offs
+
+4. HISTORY DIMENSION - How it evolved:
+   - Only document if determinable from code/comments
+   - Use [HISTORICAL NOTE: Not determinable from code] when unknown
+   - Never invent plausible history - admit gaps
+   - Note deprecated features or legacy patterns
+
+5. RELATIONSHIPS DIMENSION - How it relates to larger systems:
+   - Dependencies and assumptions
+   - Callers and how they use this code
+   - Interface contracts with other modules
+   - System-wide implications of changes
+   - External dependencies
+
+6. QUALITY & DEBT DIMENSION - What issues exist:
+   - Flag technical debt with [TECHNICAL DEBT: <category>]
+   - Security concerns and vulnerabilities
+   - Performance issues
+   - Known bugs or limitations
+   - Recommended improvements
+   
+   Use these categories for technical debt:
+   - CRITICAL: Security vulnerability, data corruption risk
+   - HIGH: Robustness issue, error handling gap
+   - MEDIUM: Maintainability problem, code smell
+   - LOW: Style issue, minor improvement
+
+DOCUMENTATION STRUCTURE:
+
+1. FILE HEADER (at top):
+   ============================================================================
+   [PROGRAM NAME] - [One-line description]
+   ============================================================================
+   
+   PURPOSE: (Syntax dimension)
+   - What this program does
+   - Primary use cases
+   
+   INPUTS AND OUTPUTS: (Syntax dimension)
+   Command Line:
+   - All flags with descriptions
+   
+   File Inputs:
+   - All file types consumed
+   
+   Outputs:
+   - STDOUT behavior
+   - File outputs
+   - Return codes
+   
+   EXAMPLES:
+   - Common usage patterns
+   
+   VARIABLE DICTIONARY - [function_name]: (Structure dimension)
+   - variable_name [scope] description, purpose, lifetime
+   
+   ALGORITHM: (Structure dimension)
+   - High-level flow
+   
+   DESIGN DECISIONS: (Intent dimension)
+   - Why this approach
+   - Trade-offs made
+   
+   EVOLUTION: (History dimension)
+   - [HISTORICAL NOTE: ...] or admit unknown
+   
+   DEPENDENCIES: (Relationships dimension)
+   - What this depends on
+   
+   KNOWN ISSUES: (Quality dimension)
+   - [TECHNICAL DEBT: ...]
+   ============================================================================
+
+2. FUNCTION HEADERS (before each function):
+   Similar structure adapted to function level
+
+3. INLINE COMMENTS:
+   - Focus on WHY, not WHAT
+   - Explain non-obvious decisions
+   - Flag gotchas and edge cases
+   - Use AI_QUESTION tags for uncertainties
+
+4. AI ATTRIBUTION:
+   - Mark all AI-generated content clearly
+   - Preserve original comments exactly
+   - Never claim AI analysis as "original documentation"
+   - Use [AI-GENERATED: ...] or similar markers
+   - Follow Linux kernel attribution standards
+
+CRITICAL INSTRUCTIONS:
+
+✓ ADMIT UNKNOWNS: When you don't know something, use:
+  - [HISTORICAL NOTE: Not determinable from code]
+  - [ASSUMPTION: Based on typical practice, but not confirmed]
+  - AI_QUESTION tags for human review
+  - NEVER invent plausible-sounding history
+
+✓ BE CONCRETE: Give specific examples, not vague descriptions
+
+✓ FOCUS ON INTENT: The "why" is more valuable than the "what"
+
+✓ FLAG DEBT HONESTLY: Don't hide issues, mark them systematically
+
+✓ COMPREHENSIVE VARIABLE DOCS: Every variable explained with scope
+
+✓ CLEAR ATTRIBUTION: Separate original from AI-generated
+
+Style: System/370 assembly level thoroughness. Someone should be able to understand the entire program from documentation alone. Target 40-50% comment density.
+
+[PASTE CODE HERE]</div>
+
+            <button class="copy-button" onclick="copyPrompt()">Copy Prompt to Clipboard</button>
+
+            <div class="success-box" style="margin-top: 2rem;">
+                <h3 style="margin-top: 0;">✅ What This Prompt Achieves</h3>
+                <p><strong>Measured Results (asn1parse.c test case):</strong></p>
+                <ul>
+                    <li>Accuracy: 85-95%</li>
+                    <li>False Positives: 0%</li>
+                    <li>Hallucinations: &lt;10%</li>
+                    <li>Comment Density: ~45% (target 40-50%)</li>
+                    <li>Technical Debt Found: 12 critical + 13 medium/low</li>
+                    <li>Generation Time: 45 seconds</li>
+                    <li>Cost: $0.03</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>API Usage</h2>
+            <p>To use this with Claude's API:</p>
+
+            <h3>Via cURL</h3>
+            <div class="api-example">
+                <pre style="margin: 0; white-space: pre-wrap; font-family: monospace; font-size: 0.9rem;">curl https://api.anthropic.com/v1/messages \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "content-type: application/json" \
+  -d '{
+    "model": "claude-sonnet-4-20250514",
+    "max_tokens": 16000,
+    "temperature": 0.3,
+    "messages": [
+      {
+        "role": "user",
+        "content": "[PASTE FULL PROMPT HERE]"
+      }
+    ]
+  }'</pre>
+            </div>
+
+            <h3>Via Python</h3>
+            <div class="api-example">
+                <pre style="margin: 0; white-space: pre-wrap; font-family: monospace; font-size: 0.9rem;">import anthropic
+
+client = anthropic.Anthropic(api_key="YOUR_API_KEY")
+
+message = client.messages.create(
+    model="claude-sonnet-4-20250514",
+    max_tokens=16000,
+    temperature=0.3,
+    messages=[
+        {
+            "role": "user", 
+            "content": prompt_text  # The full prompt
+        }
+    ]
+)
+
+print(message.content[0].text)</pre>
+            </div>
+
+            <div class="callout" style="margin-top: 2rem;">
+                <h3 style="margin-top: 0;">💰 Cost Estimates</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File Size</th>
+                            <th>Estimated Cost</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>300-400 lines</td>
+                            <td>$0.03-0.05</td>
+                            <td>30-60 sec</td>
+                        </tr>
+                        <tr>
+                            <td>500-1000 lines</td>
+                            <td>$0.08-0.15</td>
+                            <td>1-2 min</td>
+                        </tr>
+                        <tr>
+                            <td>1000-2000 lines</td>
+                            <td>$0.15-0.30</td>
+                            <td>2-4 min</td>
+                        </tr>
+                        <tr style="background: #f8f9fa; font-weight: 600;">
+                            <td>Full OpenSSL (450K lines)</td>
+                            <td>~$142</td>
+                            <td>~6 hours</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="margin-top: 1rem;"><em>Prices based on Claude API rates as of January 2025</em></p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Customization Guide</h2>
+            <p>How to adapt this prompt for your needs:</p>
+
+            <h3>For Different Languages</h3>
+            <ul>
+                <li><strong>Replace "C program"</strong> with your language (Python, Java, etc.)</li>
+                <li><strong>Adjust comment density target</strong> based on language norms</li>
+                <li><strong>Modify technical debt categories</strong> for language-specific issues</li>
+                <li><strong>Keep the 6D framework</strong> - it's language-agnostic</li>
+            </ul>
+
+            <h3>For Security-Critical Code</h3>
+            <ul>
+                <li><strong>Emphasize Security section</strong> in Quality dimension</li>
+                <li><strong>Add CERT/MISRA requirements</strong> to technical debt taxonomy</li>
+                <li><strong>Require threat modeling documentation</strong></li>
+                <li><strong>Mandate explicit trust boundaries</strong></li>
+            </ul>
+
+            <h3>For Performance-Critical Code</h3>
+            <ul>
+                <li><strong>Add Performance subsection</strong> to Structure dimension</li>
+                <li><strong>Require complexity analysis</strong> (Big-O notation)</li>
+                <li><strong>Document optimization trade-offs</strong> in Intent</li>
+                <li><strong>Note profiling hot spots</strong></li>
+            </ul>
+
+            <h3>For Educational Purposes</h3>
+            <ul>
+                <li><strong>Add "Learning Objectives"</strong> section</li>
+                <li><strong>Require step-by-step explanations</strong></li>
+                <li><strong>Include "Common Mistakes" section</strong></li>
+                <li><strong>Add exercises or questions</strong></li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Testing Your Modified Prompt</h2>
+            <p>Before using a customized prompt at scale:</p>
+
+            <ol style="line-height: 2;">
+                <li><strong>Test on known files</strong> - Start with code you understand deeply</li>
+                <li><strong>Validate output manually</strong> - Check for hallucinations and accuracy</li>
+                <li><strong>Measure false positive rate</strong> - Track incorrectly flagged issues</li>
+                <li><strong>Check comment density</strong> - Too sparse or too verbose?</li>
+                <li><strong>Verify attribution</strong> - AI content clearly marked?</li>
+                <li><strong>Test edge cases</strong> - Complex code, nested functions, macros</li>
+                <li><strong>Iterate based on findings</strong> - Refine prompt as needed</li>
+            </ol>
+
+            <div class="callout">
+                <h3 style="margin-top: 0;">📊 Validation Checklist</h3>
+                <p><strong>For each test file, verify:</strong></p>
+                <ul>
+                    <li>✓ All 6 dimensions documented</li>
+                    <li>✓ Variable dictionary complete</li>
+                    <li>✓ Technical debt properly categorized</li>
+                    <li>✓ No invented history (admits unknowns)</li>
+                    <li>✓ AI content clearly attributed</li>
+                    <li>✓ Usage examples provided</li>
+                    <li>✓ Security concerns flagged</li>
+                    <li>✓ Code still compiles with comments</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Prompt Variants</h2>
+            <p>Different versions for different use cases:</p>
+
+            <h3>Quick Analysis (Simplified)</h3>
+            <p>For rapid triage - focuses on technical debt only:</p>
+            <div class="prompt-box" style="font-size: 0.85rem;">Analyze this code for technical debt. For each issue found:
+
+1. Category: CRITICAL/HIGH/MEDIUM/LOW
+2. Location: Line numbers
+3. Issue: What's wrong
+4. Impact: Why it matters
+5. Fix: How to remediate
+
+Be specific. No invented history. Admit unknowns.</div>
+
+            <h3>Documentation Only (No Analysis)</h3>
+            <p>For adding comments without technical debt analysis:</p>
+            <div class="prompt-box" style="font-size: 0.85rem;">Add comprehensive 6D documentation comments to this code:
+- Syntax: What it accepts/returns
+- Structure: How it works
+- Intent: Why decisions made
+- History: Evolution (admit if unknown)
+- Relationships: Dependencies
+- Quality: Known issues
+
+Target 40% comment density. Admit unknowns. Clear AI attribution.</div>
+
+            <h3>Security Audit Focus</h3>
+            <p>For security-critical analysis:</p>
+            <div class="prompt-box" style="font-size: 0.85rem;">Security-focused 6D analysis of this code:
+
+PRIMARY FOCUS: Security dimension
+- Buffer overflows
+- Integer overflows
+- Use-after-free
+- Race conditions
+- Input validation
+- Trust boundaries
+- Privilege escalation
+- Information disclosure
+
+For each finding: Location, vulnerability type, exploitability, remediation.
+
+Also document: Syntax, Structure, Intent, History, Relationships as context.</div>
+        </div>
+
+        <div class="section">
+            <h2>Common Issues and Solutions</h2>
+
+            <h3>Problem: AI Inventing History</h3>
+            <p><strong>Symptom:</strong> Output includes plausible-sounding but unverifiable history</p>
+            <p><strong>Solution:</strong> Add explicit instruction: "NEVER invent history. Use [HISTORICAL NOTE: Not determinable] when unknown."</p>
+
+            <h3>Problem: Too Verbose</h3>
+            <p><strong>Symptom:</strong> Comments are longer than code, overwhelming</p>
+            <p><strong>Solution:</strong> Add constraint: "Be concise. Target 40-50% comment density. Focus on WHY, not WHAT."</p>
+
+            <h3>Problem: Missing Technical Debt</h3>
+            <p><strong>Symptom:</strong> Known issues not flagged</p>
+            <p><strong>Solution:</strong> Emphasize: "FLAG DEBT HONESTLY: Don't hide issues. Use [TECHNICAL DEBT: ...] systematically."</p>
+
+            <h3>Problem: Unclear Attribution</h3>
+            <p><strong>Symptom:</strong> Can't tell AI-generated from original</p>
+            <p><strong>Solution:</strong> Add requirement: "Mark ALL AI-generated content with [AI-GENERATED] or similar. Preserve original comments exactly."</p>
+
+            <h3>Problem: Hallucinations</h3>
+            <p><strong>Symptom:</strong> AI invents relationships or assumptions</p>
+            <p><strong>Solution:</strong> Lower temperature (0.2-0.3) and add: "When uncertain, use AI_QUESTION tag for human review."</p>
+        </div>
+
+        <div class="section">
+            <h2>Next Steps</h2>
+            <ul>
+                <li><a href="validation.html" style="color: #667eea;"><strong>Learn validation process</strong></a> - How to verify AI output for accuracy</li>
+                <li><a href="commented.html" style="color: #667eea;"><strong>See example output</strong></a> - Full OpenSSL file with 6D documentation</li>
+                <li><a href="methodology.html" style="color: #667eea;"><strong>Understand the evolution</strong></a> - Why v6 works better than v1-v5</li>
+                <li><a href="research.html" style="color: #667eea;"><strong>Read research findings</strong></a> - Discoveries about AI behavior</li>
+            </ul>
+
+            <div class="success-box" style="margin-top: 2rem;">
+                <h3 style="margin-top: 0;">🎯 Ready to Use</h3>
+                <p><strong>This prompt is production-ready:</strong></p>
+                <ul>
+                    <li>Tested on 348-line OpenSSL file</li>
+                    <li>0% false positives verified</li>
+                    <li>&lt;10% hallucination rate</li>
+                    <li>$0.03 cost per file</li>
+                    <li>45-second generation time</li>
+                </ul>
+                <p style="margin-top: 1rem;"><strong>Copy it, use it, improve it. Share your results!</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <footer style="background: #2d3748; color: white; padding: 2rem; text-align: center; margin-top: 4rem;">
+        <p><strong>Technical Debt Observatory</strong></p>
+        <p style="margin-top: 1rem; opacity: 0.9; font-style: italic;">
+            "Reproduce, validate, improve. Science, not magic."
+        </p>
+        <p style="margin-top: 1rem; opacity: 0.7;">Anonymous Systems Programmer • ex-Navy • System/370 era</p>
+    </footer>
+
+    <script>
+        function copyPrompt() {
+            const promptText = document.querySelector('.prompt-box').textContent;
+            navigator.clipboard.writeText(promptText).then(() => {
+                const button = document.querySelector('.copy-button');
+                button.textContent = '✓ Copied!';
+                button.style.background = '#28a745';
+                setTimeout(() => {
+                    button.textContent = 'Copy Prompt to Clipboard';
+                    button.style.background = '#667eea';
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

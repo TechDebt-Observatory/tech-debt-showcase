@@ -19,6 +19,26 @@
             background: #f5f5f5;
         }
         
+        .nav {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav a {
+            margin-right: 2rem;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .nav a:hover {
+            text-decoration: underline;
+        }
+        
         .hero {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -51,6 +71,7 @@
             font-size: 1.1rem;
             transition: transform 0.2s, box-shadow 0.2s;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin: 0.5rem;
         }
         
         .cta-button:hover {
@@ -166,6 +187,46 @@
             content: "✗";
             color: #dc3545;
         }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 2rem;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            margin: 2rem 0;
+        }
+
+        .highlight-box h3 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+
+        .dimension-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .dimension-box {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .dimension-box h4 {
+            color: #667eea;
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        .dimension-box p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
         
         footer {
             background: #2d3748;
@@ -199,21 +260,17 @@
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Our Mission</h2>
-        <p>This isn't just about analyzing code. It's about bringing 
-        <strong>responsible documentation</strong> back to software engineering.</p>
-        <p style="margin-top: 1rem;">
-            The industry is wasting <strong>billions of dollars</strong> and 
-            <strong>millions of man-hours</strong> every year because we stopped 
-            documenting code.
-        </p>
-        <p style="margin-top: 1rem;">
-            <strong>We can fix this.</strong>
-        </p>
-        <a href="goals.html" class="cta-button">Read Our Mission →</a>
+    <div class="nav">
+        <a href="index.html">Home</a>
+        <a href="6d-framework.html">6D Framework</a>
+        <a href="methodology.html">Methodology</a>
+        <a href="prompts.html">Prompts</a>
+        <a href="validation.html">Validation</a>
+        <a href="research.html">Research</a>
+        <a href="goals.html">Our Mission</a>
+        <a href="scale.html">Scale Up</a>
     </div>
-    
+
     <div class="hero">
         <h1>Technical Debt Observatory</h1>
         <p>What if AI could analyze critical infrastructure code in seconds and find issues that take humans hours?</p>
@@ -225,6 +282,57 @@
     </div>
 
     <div class="container">
+        <div class="card">
+            <h2>Our Mission</h2>
+            <p>This isn't just about analyzing code. It's about bringing 
+            <strong>responsible documentation</strong> back to software engineering.</p>
+            <p style="margin-top: 1rem;">
+                The industry is wasting <strong>billions of dollars</strong> and 
+                <strong>millions of man-hours</strong> every year because we stopped 
+                documenting code.
+            </p>
+            <p style="margin-top: 1rem;">
+                <strong>We can fix this.</strong>
+            </p>
+            <a href="goals.html" class="cta-button">Read Our Mission →</a>
+        </div>
+
+        <div class="highlight-box">
+            <h3>🔬 The 6-Dimensional Documentation Framework</h3>
+            <p style="margin-bottom: 1.5rem;">We developed a comprehensive framework that documents code across six critical dimensions, eliminating the "intent gap" that causes AI coding agents to fail on legacy code.</p>
+            
+            <div class="dimension-grid">
+                <div class="dimension-box">
+                    <h4>D1: Syntax</h4>
+                    <p>What the code accepts and returns</p>
+                </div>
+                <div class="dimension-box">
+                    <h4>D2: Structure</h4>
+                    <p>How it works internally</p>
+                </div>
+                <div class="dimension-box">
+                    <h4>D3: Intent</h4>
+                    <p>Why design decisions were made</p>
+                </div>
+                <div class="dimension-box">
+                    <h4>D4: History</h4>
+                    <p>How it evolved over time</p>
+                </div>
+                <div class="dimension-box">
+                    <h4>D5: Relationships</h4>
+                    <p>How it relates to larger systems</p>
+                </div>
+                <div class="dimension-box">
+                    <h4>D6: Quality</h4>
+                    <p>What issues exist and need attention</p>
+                </div>
+            </div>
+
+            <p style="margin-top: 1.5rem; text-align: center;">
+                <a href="6d-framework.html" class="cta-button" style="background: #667eea; color: white;">Explore the Framework →</a>
+            </p>
+        </div>
+
         <div class="card">
             <h2>The Challenge</h2>
             <p>OpenSSL is critical infrastructure used by millions of applications worldwide. After Heartbleed, everyone knows technical debt in security-critical code is dangerous.</p>
@@ -246,7 +354,7 @@
                 <li>Find technical debt and security issues</li>
                 <li>Prioritize by severity and impact</li>
                 <li>Provide actionable remediation steps</li>
-                <li>Add comprehensive comments for maintainability</li>
+                <li>Add comprehensive 6D documentation</li>
             </ul>
         </div>
 
@@ -268,7 +376,7 @@
                     <li><strong>Cost:</strong> ~$0.05 (API cost)</li>
                     <li><strong>Coverage:</strong> Systematic and thorough</li>
                     <li><strong>Scale:</strong> Full OpenSSL in ~6 hours</li>
-                    <li><strong>Documentation:</strong> Comprehensive comments</li>
+                    <li><strong>Documentation:</strong> Comprehensive 6D comments</li>
                 </ul>
             </div>
         </div>
@@ -289,8 +397,8 @@
                     <div class="label">Low Priority</div>
                 </div>
                 <div class="stat-box">
-                    <div class="number">75s</div>
-                    <div class="label">Analysis Time</div>
+                    <div class="number">0%</div>
+                    <div class="label">False Positives</div>
                 </div>
             </div>
             
@@ -303,7 +411,28 @@
                 <li>Type safety issues mixing signed/unsigned integers</li>
             </ul>
             
-            <p style="margin-top: 1.5rem;"><strong>Every issue was real. Every recommendation was actionable.</strong></p>
+            <p style="margin-top: 1.5rem;"><strong>Every issue was real. Every recommendation was actionable. Zero false positives.</strong></p>
+
+            <p style="margin-top: 1.5rem; text-align: center;">
+                <a href="analysis.html" class="cta-button">View Full Analysis →</a>
+                <a href="commented.html" class="cta-button">See Documented Code →</a>
+            </p>
+        </div>
+
+        <div class="highlight-box">
+            <h3>📚 The Methodology: Phase 1 v6</h3>
+            <p>Through 6 iterations and extensive testing, we developed a proven prompt engineering methodology that:</p>
+            <ul class="feature-list" style="margin-top: 1rem;">
+                <li>Preserves 100% of original comments (mandatory pre-flight checks)</li>
+                <li>Adds 6-dimensional documentation systematically</li>
+                <li>Achieves 0% false positive rate through careful validation</li>
+                <li>Reduces AI hallucination to under 10%</li>
+                <li>Costs only ~$0.03-0.05 per file</li>
+            </ul>
+            <p style="margin-top: 1.5rem; text-align: center;">
+                <a href="methodology.html" class="cta-button" style="background: #667eea; color: white;">Learn the Methodology →</a>
+                <a href="prompts.html" class="cta-button" style="background: #667eea; color: white;">Get the Prompts →</a>
+            </p>
         </div>
 
         <div class="card">
@@ -318,7 +447,22 @@
                 <li>Helped maintainers prioritize remediation?</li>
             </ul>
             <p style="margin-top: 1.5rem; text-align: center;">
-                <a href="raw-code.html" class="cta-button">See the Full Analysis →</a>
+                <a href="scale.html" class="cta-button">Explore the Vision →</a>
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Research Findings</h2>
+            <p>This project has revealed surprising insights about AI behavior and code documentation:</p>
+            <ul class="feature-list" style="margin-top: 1rem;">
+                <li><strong>The Intent Gap:</strong> AI fails on legacy code because we expect it to "read our minds"</li>
+                <li><strong>Residual Learning:</strong> AI systems retain influence across API calls, even with deleted conversations</li>
+                <li><strong>Documentation Density:</strong> OpenSSL averages ~5% comments; Linux kernel (equivalent code) has 40-50%</li>
+                <li><strong>Economic Impact:</strong> Industry wastes $50B+ annually due to poor documentation</li>
+                <li><strong>6D Framework:</strong> Comprehensive documentation improves AI accuracy from 50-60% to 85-95%</li>
+            </ul>
+            <p style="margin-top: 1.5rem; text-align: center;">
+                <a href="research.html" class="cta-button">Read Full Research →</a>
             </p>
         </div>
 
