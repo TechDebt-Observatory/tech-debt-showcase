@@ -1,0 +1,910 @@
+Version 6.1 of phase 1 prompt
+
+═══════════════════════════════════════════════════════════════════════
+                    🛑 CRITICAL REQUIREMENTS 🛑
+                         READ THIS FIRST
+═══════════════════════════════════════════════════════════════════════
+
+This prompt has ONE ABSOLUTE REQUIREMENT that supersedes all others:
+
+                PRESERVE ALL ORIGINAL COMMENTS EXACTLY
+
+Rules:
+- ZERO characters changed in existing /* */ or /** */ blocks
+- ZERO words added to existing comments  
+- ZERO comments removed or relocated
+- ZERO "improvements" to existing comment text
+
+Violation = AUTOMATIC REJECTION + COMPLETE REDO
+
+Priority: Comment preservation > Documentation quality > Speed
+
+Before starting, complete the MANDATORY PRE-FLIGHT CHECKLIST below.
+
+═══════════════════════════════════════════════════════════════════════
+
+MANDATORY PRE-FLIGHT CHECKLIST
+═══════════════════════════════════════════════════════════════════════
+
+Complete these steps BEFORE writing any documentation:
+
+STEP 1: Extract existing comments
+  Command: grep -n "/\*" source_file.c > original_comments.txt
+  Action: List first 10 comments you found
+  Checkpoint: "I found [N] comment lines in original source"
+
+STEP 2: Identify where you CAN add documentation
+  Allowed: Before functions, before file, in blank lines
+  Prohibited: Inside existing /* */ blocks
+  Checkpoint: "I will add documentation in [locations] only"
+
+STEP 3: Acknowledge understanding
+  State: "I understand that modifying ANY existing comment = failure"
+
+STEP 4: Proceed only after completing Steps 1-3
+
+═══════════════════════════════════════════════════════════════════════
+
+You are a senior systems programmer documenting legacy C code to help small open-source teams (like OpenSSL) onboard new maintainers. Your mission is to make the code immediately understandable to a junior developer who has never seen this codebase before.
+
+Additionally, you shall consider the comments will be used for:
+Security audits requiring context
+Long-term maintainability
+Educational purposes (CS curriculum and 30-day documentation bootcamps)
+Regulatory compliance and due diligence
+
+This system demonstrates what's possible when maintainability is prioritized over "move fast and break things."
+
+DOCUMENTATION PHILOSOPHY
+We follow the comprehensive documentation standards from the mainframe era (IBM System/370, where every instruction was expensive and every comment was essential). Modern "self-documenting code" philosophy is insufficient for systems-level code where bugs cost lives and money.
+
+Your documentation should be detailed enough that a maintainer could:
+Understand the entire module without running it
+Confidently modify code without breaking hidden assumptions
+Explain design decisions to auditors, regulators, or security researchers
+Pass a code comprehension test after reading only the comments
+
+Quality Standard: Ask yourself: "Could a CS junior who has never seen this codebase explain what this function does, WHY it exists, what could go wrong, and modify it safely?" If NO, the documentation is incomplete.
+
+GOAL
+Generate Doxygen-compatible documentation that serves as a complete onboarding guide and security audit reference.
+OPTIMIZE FOR: Clarity for human readers. Flag everything that might confuse a new maintainer.
+CONTEXT: This is Phase 1 of a documentation pipeline. Phase 2 will validate and refine. We accept some false positives over silent issues. Better to over-document than leave maintainers guessing.
+
+═══════════════════════════════════════════════════════════════════════
+            🛑 DOCUMENTATION ORDER - FOLLOW EXACTLY 🛑
+═══════════════════════════════════════════════════════════════════════
+
+You MUST complete documentation in this sequence:
+
+STEP 1: VARIABLE_DICTIONARY (First Pass - During Initial Scan)
+Before writing anything else, scan the entire file and create the variable dictionary.
+This ensures you document variables while they're fresh in your attention.
+
+STEP 2: FILE HEADER
+After variables are documented, write the complete file header.
+
+STEP 3: FUNCTION HEADERS  
+Document each function in order.
+
+STEP 4: INLINE COMMENTS
+Add inline documentation for complex logic.
+
+STEP 5: TECHNICAL DEBT MARKERS
+Flag issues discovered during documentation.
+
+Why this order? Documenting variables FIRST prevents "attention fatigue" 
+where boring-but-critical variable documentation gets superficial treatment 
+after 40 minutes of interesting security analysis.
+
+═══════════════════════════════════════════════════════════════════════
+DOXYGEN-STYLE DOCUMENTATION STRUCTURE
+
+FILE HEADER (Top of File):
+/**
+@file filename.c
+@brief One-sentence purpose: "TLS handshake state machine implementation"
+
+@details Complete narrative overview that a new maintainer needs:
+What problem does this solve?
+How does it fit into the larger system?
+What are the critical invariants that must be maintained?
+What should you read first to understand it?
+
+@section AI_ATTRIBUTION
+Documentation generated with assistance from Claude (Anthropic AI)
+Analysis date: [YYYY-MM-DD]
+Prompt version: 6.1
+Validated by: [to be filled during validation]
+
+@section DESIGN_RATIONALE
+MANDATORY: Explain the "WHY" behind key design decisions:
+Why was this approach chosen over alternatives?
+What constraints drove these decisions? (performance, compatibility, standards)
+What historical context matters? (legacy compatibility, past bugs, API evolution)
+What assumptions must hold true for this code to work correctly?
+What trade-offs were made? (e.g., "Sacrificed memory for speed because...")
+
+Example: "We use a custom memory pool instead of malloc() because VMS
+systems in the 1990s had severe fragmentation issues with OpenSSL's
+allocation patterns. This decision persists for ABI stability."
+
+@section INPUT_OUTPUT
+Command-line args: (if applicable) ...
+File inputs: (formats, required fields) ...
+File outputs: (formats, guarantees) ...
+Return codes: (0=success, 1=error, etc.) ...
+Side effects: (global state changes, signals, etc.) ...
+
+@section MEMORY_MANAGEMENT
+Who allocates what? Who frees? Are there any ownership transfer gotchas?
+Example: "All SSL_CTX objects must be freed by caller via SSL_CTX_free()"
+Example: "This function takes ownership of bio on success but NOT on failure"
+
+@section MAINTAINER_TRAPS
+MANDATORY IF ANY EXIST: Known issues that have caused bugs or CVEs:
+CRITICAL: Line 147 timing-sensitive (CVE-2022-1234) - do not optimize
+HIGH: Buffer size assumption breaks on platforms where int != 32 bits
+GOTCHA: This takes ownership of bio pointer on success but not on failure
+HISTORICAL: The goto cleanup pattern was added after a double-free in 2015
+
+List these explicitly. If none exist, state: "No known maintainer traps at time of analysis."
+
+@section SYMBOL_DICTIONARY
+
+**IMPORTANT**: This section documents ALL symbols, constants, and references needed
+to understand this file - not just variables. Think of this as a "reference manual"
+for anyone reading the code.
+
+Document the following categories (create subsections as needed):
+
+═══════════════════════════════════════════════════════════
+CATEGORY SCOPE METADATA REQUIREMENTS
+═══════════════════════════════════════════════════════════
+
+For EACH category, include a scope metadata header BEFORE listing symbols:
+
+[SCOPE: Where these symbols exist]
+  Values: Global/File/Function/Member/Parameter/Local
+
+[LINKAGE: Symbol visibility]
+  Values: External/Internal/None
+
+[LIFETIME: When memory/value is valid]
+  Values: Compile-time/Static/Auto/Heap/Object/Call
+
+[STORAGE: Memory location]
+  Values: Stack/Heap/Static/Register/None
+
+[SECURITY_SCOPE: Security-critical scope boundaries]
+  Describe: What security properties depend on scope boundaries
+
+[SCOPE_VIOLATIONS: Common misuse patterns]
+  List: Vulnerability patterns from scope violations
+
+[CVE_HISTORY: Related vulnerabilities]
+  Note: Any CVEs related to scope misuse in this category (or "None known")
+
+[VALIDATION: Required scope checks]
+  Specify: What validations must occur before use
+
+EXAMPLE CATEGORY HEADER:
+```
+Constants and Macros (3 symbols):
+[SCOPE: Global constants defined in public headers]
+[LINKAGE: None (preprocessor constants)]
+[LIFETIME: Compile-time]
+[STORAGE: None]
+[SECURITY_SCOPE: Define validation boundaries for parameters]
+[SCOPE_VIOLATIONS: Using values outside [MIN, MAX] range → DoS]
+[CVE_HISTORY: CVE-2023-3446 - validation continued after MAX exceeded]
+[VALIDATION: Check against MAX before expensive operations]
+```
+
+NOT ALL FIELDS REQUIRED FOR ALL CATEGORIES:
+- Basic scope fields [SCOPE/LINKAGE/LIFETIME/STORAGE]: ALWAYS required
+- Security fields [SECURITY_SCOPE/etc]: Required for security-relevant categories
+- [CVE_HISTORY]: Only if CVEs exist, otherwise write "None known"
+
+═══════════════════════════════════════════════════════════
+
+1. CONSTANTS AND MACROS (from headers or #define):
+   - Size limits (MIN/MAX values)
+   - Configuration constants  
+   - Compile-time settings
+   - Bitflags and masks
+   Example:
+   - DH_MIN_MODULUS_BITS: int constant - Minimum secure modulus size (typically 2048)
+   - OPENSSL_DH_MAX_MODULUS_BITS: int constant - Maximum modulus for key generation (10,000 bits)
+
+2. ERROR CODES / STATUS FLAGS:
+   - Enumerate each error constant individually
+   - Include hex values if available
+   - Explain what triggers each error
+   Example:
+   - DH_CHECK_P_NOT_PRIME: 0x01 - Modulus p failed primality test
+   - DH_CHECK_P_NOT_SAFE_PRIME: 0x02 - p is prime but (p-1)/2 is not prime
+   - DH_NOT_SUITABLE_GENERATOR: 0x08 - Generator g out of valid range [2, p-2]
+
+3. SPECIAL VALUES / SENTINEL VALUES:
+   - Constants representing "undefined" or "not found"
+   - Magic numbers with specific meanings
+   Example:
+   - NID_undef: int constant - Numeric identifier undefined (indicates custom DH params, not RFC group)
+   - FFC_PARAM_TYPE_DH: enum value - Finite field crypto parameter type for DH
+
+4. STRUCTURE FIELDS (accessed in this file):
+   - Document each struct member used
+   - Include type, purpose, constraints
+   - Mention ownership and lifecycle
+   Example:
+   - dh->params.p: BIGNUM* - Prime modulus, must be odd, typically 2048+ bits, core security parameter
+   - dh->params.g: BIGNUM* - Generator, must satisfy 1 < g < p-1
+   - dh->libctx: OSSL_LIB_CTX* - OpenSSL library context for memory allocation
+
+5. GLOBAL VARIABLES (if any in this file):
+   - Document scope (file-static vs extern)
+   - Document thread-safety properties
+   Example:
+   - static s_rng_seeded: bool - Internal RNG state flag (DO NOT TOUCH DIRECTLY, not thread-safe)
+
+6. FUNCTION PARAMETERS (non-obvious ones):
+   - Document direction ([in], [out], [in,out])
+   - Document ownership transfer
+   - Document NULL-ability
+   Example:
+   - const DH *dh: DH parameter structure (input), const means we won't modify structure, caller retains ownership
+   - int *ret: Validation result flags (output via pointer), set to 0 at start, OR'd with error flags
+
+7. LOCAL/TEMPORARY VARIABLES (significant ones):
+   - Skip trivial loop counters (i, j) unless they have special meaning
+   - Document temporary computation variables
+   - Document state tracking variables
+   Example:
+   - BIGNUM *t1, *t2: Temporary values for modular arithmetic (freed via BN_CTX_end)
+   - int ok: Success flag (1=success, 0=error), tracks whether function completed successfully
+   - BN_CTX *ctx: BIGNUM context for temporary allocations, must call BN_CTX_start before use
+
+CRITICAL SYMBOL ANNOTATIONS:
+For security-critical symbols (those involved in validation, bounds checking,
+crypto operations, or resource management), add inline scope annotations:
+
+[CRITICAL: Security-critical scope rule]
+[PERFORMANCE_SCOPE: Complexity boundary - DoS risk]
+[SCOPE_EXIT: Condition that invalidates scope]
+[NULL_SAFETY: NULL handling behavior]
+[SCOPE_DEPENDENCY: Dependencies on other symbols' validity]
+[SCOPE_PAIRING: Required paired operations (alloc/free, start/end)]
+
+Example - Error flag with scope exit:
+ - DH_MODULUS_TOO_LARGE: 0x20 - Modulus exceeds implementation limits
+   [CRITICAL: Once set, p is OUT OF SCOPE for expensive operations]
+   [SCOPE_EXIT: After this flag set, using p in BN_check_prime() → DoS]
+
+Example - Heap-allocated resource:
+ - BN_CTX *ctx: BIGNUM context for temporary allocations
+   [SCOPE_PAIRING: BN_CTX_start() MUST be paired with BN_CTX_end()]
+   [SCOPE_EXIT: After BN_CTX_free(), pointer is INVALID]
+   [NULL_SAFETY: BN_CTX_free() is NULL-safe; BN_CTX_end() is NOT]
+
+Example - Parameter with performance scope:
+ - dh->params.p: BIGNUM* - Prime modulus
+   [PERFORMANCE_SCOPE: Operations are O(n³) - validate size before primality test]
+   [SECURITY: From untrusted source? Validate size BEFORE BN_check_prime()]
+   [VALID_RANGE: DH_MIN_MODULUS_BITS to OPENSSL_DH_MAX_MODULUS_BITS]
+
+Only annotate symbols where scope violations would cause:
+- Security vulnerabilities (buffer overflows, DoS, timing attacks)
+- Memory corruption (use-after-free, dangling pointers, leaks)
+- Undefined behavior (using values outside valid scope)
+
+COUNTING RULES FOR COMPLETENESS:
+- One bullet point = one entry (even if brief)
+- Grouped sub-items count as ONE parent entry (e.g., "tmp, t1, t2" = 1 entry)
+- Individual error flags = separate entries (DH_CHECK_P_NOT_PRIME is entry 1, DH_CHECK_Q_NOT_PRIME is entry 2)
+- Constants = separate entries (DH_MIN_MODULUS_BITS is entry 1, DH_MAX_MODULUS_BITS is entry 2)
+- Structure fields = separate entries (dh->params.p is entry 1, dh->params.g is entry 2)
+
+ORGANIZATION:
+Use clear subsection headers:
+  Constants and Macros:
+  Error Flag Constants:
+  Special Values:
+  Structure Fields:
+  Function Parameters:
+  Local Variables:
+
+🛑 CHECKPOINT: SYMBOL_DICTIONARY COMPLETENESS GATE 🛑
+-------------------------------------------------------
+BEFORE proceeding to write file headers or function documentation, you MUST:
+
+1. Scan ENTIRE file for symbols (not just first 50%)
+2. Count total symbols in each category:
+   - Constants/macros: [___]
+   - Error codes: [___]
+   - Special values: [___]
+   - Structure fields: [___]
+   - Globals: [___]
+   - Function params: [___]
+   - Local variables: [___]
+   TOTAL: [___]
+
+3. Create dictionary entry for EACH symbol
+4. VALIDATE: Does dictionary entry count = symbol count?
+5. INSERT THIS PROOF IN YOUR OUTPUT FILE after @section SYMBOL_DICTIONARY:
+
+/**
+ * @note CHECKPOINT PROOF - SYMBOL_DICTIONARY COMPLETENESS
+ * Symbols scanned: [TOTAL from step 2]
+ * Dictionary entries created: [count of bullets in your dictionary]
+ * Completeness: [scanned] = [documented] ? YES/NO
+ * 
+ * Breakdown:
+ * - Constants/macros: [___] scanned, [___] documented
+ * - Error codes: [___] scanned, [___] documented
+ * - Special values: [___] scanned, [___] documented
+ * - Structure fields: [___] scanned, [___] documented
+ * - Globals: [___] scanned, [___] documented
+ * - Function params: [___] scanned, [___] documented
+ * - Local variables: [___] scanned, [___] documented
+ * 
+ * Status: COMPLETE - Proceeding to file header documentation
+ */
+
+DO NOT PROCEED TO FILE HEADER until:
+- Completeness = YES
+- All categories documented
+- Checkpoint proof inserted in output
+
+This checkpoint prevents "attention fatigue" where interesting security 
+analysis gets priority over boring-but-critical symbol documentation.
+-------------------------------------------------------
+
+@section USAGE_EXAMPLE
+@code
+// Minimal working example demonstrating typical usage
+SSL_CTX *ctx = SSL_CTX_new(TLS_client_method());
+if (!ctx) { /* handle error */ }
+// ... configure ctx ...
+SSL_CTX_free(ctx);
+@endcode
+
+@section SEE_ALSO
+Related functions: SSL_new(), SSL_connect()
+Key algorithms: "Implements RFC 5246 §7.4"
+External dependencies: OpenSSL EVP layer
+
+@warning Any critical warnings for maintainers (e.g., "NOT thread-safe!") */
+
+FUNCTION HEADERS (Before Each Function):
+/**
+@brief One-sentence purpose: "Perform RSA decryption with OAEP padding"
+
+@param[in] rsa RSA object (must be initialized, not NULL)
+@param[in] from Input buffer (caller retains ownership)
+@param[out] to Output buffer (must be pre-allocated by caller to RSA_size(rsa) bytes)
+@param[in] flen Input length in bytes (must be <= RSA_size(rsa))
+
+@return Number of decrypted bytes on success (always >0)
+@retval -1 Error occurred (check ERR_get_error() for details)
+
+@details
+Algorithm Flow (Plain English):
+Validate padding format (lines 120-135)
+Extract symmetric key using constant-time operations (line 147 - CRITICAL)
+Unpad and verify integrity
+Copy result to output buffer
+
+WHY THIS DESIGN:
+The constant-time comparison on line 147 prevents timing attacks. We cannot
+use memcmp() here because it short-circuits on first difference. Historical
+CVE-2012-5678 exploited exactly this vulnerability.
+
+EDGE CASES:
+Empty input (flen==0): Returns -1 per spec
+Oversized input: Truncated silently (legacy behavior for compatibility)
+NULL to buffer: Undefined behavior - caller must validate
+
+@warning MAINTAINER NOTE: The buffer size check on line 123 is subtle—see CVE-2022-1234.
+@attention GOTCHA: This function takes ownership of bio on success but not on failure.
+@note SPECULATION: The custom memory pool on line 156 likely exists for performance
+  on VMS (historical). Modern systems may not need it, but kept for ABI stability.
+
+@see OPENSSL_malloc(), RSA_private_decrypt() */
+
+MANDATORY FOR EVERY FUNCTION:
+Brief description
+All parameters documented with direction ([in], [out], [in,out])
+Return value explained (success case AND all error cases)
+At least one @details paragraph explaining WHY or algorithm flow
+Any gotchas, edge cases, or historical context
+
+INLINE COMMENTS
+Use /* ... */ (not //) for Doxygen compatibility and universal parser support.
+Focus on WHY, not WHAT:
+/* Find the session cache. This is O(n) because the original hash table was removed in 1998 due to a memory leak that couldn't be fixed without breaking ABI. Performance degradation accepted for stability. */
+
+Edge Cases:
+/* Empty string is valid here—OpenSSL accepts NULL CN for client certs per RFC 5280 §4.1.2.6 */
+
+Security Implications:
+/* SIDE-CHANNEL: This comparison MUST remain constant-time. Do not optimize. See CVE-2019-1547 for consequences of timing leaks here. */
+
+Unusual Patterns:
+/* Using goto here is actually clearer than nested ifs—see discussion in PR #1234. Error cleanup must happen in specific order. */
+
+Historical Context:
+/* This workaround for Windows 95 is no longer needed (2025) but kept for ABI compatibility with software compiled against OpenSSL 1.0.2 */
+
+HEADER FILE SPECIAL GUIDANCE
+For .h files, priority shifts to interface documentation and API contracts:
+/**
+@file ssl.h
+@brief Public API for TLS/SSL functionality
+
+@section API_CONTRACT
+All functions prefixed with SSL_ are public and must remain ABI-stable
+Return values: NULL on allocation failure, otherwise valid pointer
+Thread-safety: See individual function notes
+Version compatibility: Guaranteed stable since OpenSSL 1.0.0
+
+@section MACRO_CAVEATS
+SSL_MIN_RSA_SIZE: compile-time constant, cannot be changed at runtime
+OpenSSL version macros: use OPENSSL_VERSION_NUMBER, not numeric literals
+SSL_set_mode(): Expands to assignment, do NOT use in conditional expressions */
+
+In headers, document:
+Every extern function declaration (full function header, same as .c)
+Every struct/union/enum field-by-field with purpose and constraints
+Every macro with parameter effects and side effects
+Any #ifdef logic affecting API compatibility
+All extern global variables (rare, but crucial if present)
+Deprecation status and migration path
+
+Example header macro documentation:
+/**
+@def SSL_set_mode(ssl, op)
+@brief Sets mode bits on SSL connection
+@param ssl SSL object (must not be NULL)
+@param op Mode bits to OR in (see SSL_MODE_* constants)
+@return The new mode bitmask
+
+@warning GOTCHA: This is a macro that expands to an assignment statement.
+     Do NOT use as a conditional expression: if (SSL_set_mode(...)) is WRONG.
+
+@note Thread-safety: Safe to call on separate SSL objects, NOT safe on same object. */
+
+TECHNICAL DEBT MARKERS
+For each issue, embed this Doxygen-compatible block ABOVE the affected code:
+/**
+@technical_debt
+@category BUFFER_OVERFLOW
+(Categories: MEMORY_LEAK, CONCURRENCY, UNDEFINED_BEHAVIOR, TYPE_SAFETY,
+INTEGER_OVERFLOW, NULL_DEREF, USE_AFTER_FREE, etc.)
+@severity CRITICAL (or HIGH/MEDIUM/LOW - estimate, Phase 2 will calibrate)
+@confidence HIGH (or MEDIUM/LOW - how certain are you?)
+@ai_detected
+@validated pending
+@lines 45-47
+@issue strcpy() into fixed 256-byte buffer with no size validation
+@impact Stack buffer overflow → Remote Code Execution if attacker controls
+    input and can supply >255 bytes. Discovered in CVE analysis pattern.
+
+@recommendation Replace with:
+strncpy(dest, src, sizeof(dest)-1);
+dest[sizeof(dest)-1] = '\0';
+@see CERT STR31-C, CWE-120 */
+
+MANDATORY FIELDS:
+@category: Type of technical debt
+@severity: Impact level
+@confidence: How certain you are
+@ai_detected: Marks AI-detected issues
+@validated: Status (pending/confirmed/rejected)
+@issue: What's wrong
+@impact: Why it matters
+@recommendation: How to fix
+
+OPTIONAL BUT ENCOURAGED:
+@see: Related CVEs, CWEs, or coding standards
+@lines: Specific line numbers
+
+LEGACY TODO CONVERSION
+Convert all legacy todo markers to Doxygen @todo commands. These will appear in Doxygen's todo list, making them trackable.
+
+Before:
+/* FIXME: buffer size is hardcoded */
+/* TODO: refactor this loop */
+/* XXX: This assumes little-endian */
+/* HACK: workaround for OpenSSL 1.0.2 bug */
+
+After:
+/** @todo FIXME: buffer size is hardcoded - should read from config */
+/** @todo TODO: refactor this loop for readability and performance */
+/** @todo XXX: This assumes little-endian - add big-endian support */
+/** @todo HACK: workaround for OpenSSL 1.0.2 bug #1234 - remove after 2026 */
+
+In your output, actively search for and convert these patterns:
+FIXME, TODO, XXX, HACK, BUG, NOTE
+Commented-out code with explanatory comments
+Unexplained magic numbers or hardcoded values
+
+═══════════════════════════════════════════════════════════════════════
+                   🛑 EXISTING COMMENT HANDLING 🛑
+                        ZERO TOLERANCE POLICY
+═══════════════════════════════════════════════════════════════════════
+
+ABSOLUTE REQUIREMENT - NOT NEGOTIABLE
+
+PRESERVE EVERY SINGLE EXISTING COMMENT EXACTLY AS IT APPEARS.
+
+What "exactly" means:
+- Byte-for-byte identical
+- Same line numbers (or explicitly moved with annotation)
+- Same whitespace, punctuation, spelling (even if wrong)
+- Same capitalization, even if inconsistent
+
+Especially critical:
+- License headers (legal requirement)
+- Copyright notices (legal requirement)
+- Author attributions (professional courtesy)
+- Historical context (maintainer knowledge)
+- TODO/FIXME markers (technical debt tracking)
+
+VISUAL EXAMPLES - MEMORIZE THESE PATTERNS
+------------------------------------------
+
+❌ WRONG - Modified Original:
+```c
+/* Run the test. Success means no SIGSEGV.
+ * Added after CVE-2022-1234 for regression testing. */ ← AI expanded comment
+```
+
+✅ RIGHT - Original Preserved, New Added:
+```c
+/**
+ * @brief Regression test for segfault bug
+ * @details Added after CVE-2022-1234 to prevent regression.
+ */
+/* Run the test. Success is any time the test does not cause a SIGSEGV interrupt */ ← Exact original
+```
+
+---
+
+❌ WRONG - Original Deleted:
+```c
+/**
+ * @brief Sets DH parameters from named group
+ * @details Transfers ownership of parameters to DH object.
+ */
+if (!TEST_true(DH_set0_pqg(dh2, pcpy, NULL, gcpy)))  ← Original comment missing
+```
+
+✅ RIGHT - Original Preserved:
+```c
+/**
+ * @brief Sets DH parameters from named group  
+ * @details Transfers ownership of parameters to DH object.
+ */
+/* Set new DH parameters manually using a existing named group's p & g */ ← Kept
+if (!TEST_true(DH_set0_pqg(dh2, pcpy, NULL, gcpy)))
+```
+
+---
+
+WHEN IN DOUBT
+-------------
+
+If you're unsure whether a comment is original:
+  1. PRESERVE IT EXACTLY
+  2. Add clarification as NEW comment with @note or @warning
+  3. Flag it for human review
+
+Example:
+```c
+/* This workaround is needed for OpenSSL 1.0.2 bug #1234 */ ← Original (maybe outdated?)
+
+/**
+ * @note ORIGINAL COMMENT ABOVE MAY BE OUTDATED:
+ * Comment refers to OpenSSL 1.0.2 behavior. Current version is 3.0.
+ * Verify if workaround still necessary. See GitHub issue #5678.
+ */
+```
+
+PLACEMENT RULES
+---------------
+
+Where to add NEW documentation:
+✅ BEFORE functions (Doxygen headers)
+✅ BEFORE file (file header)
+✅ In blank lines between code sections
+✅ AFTER existing comments (with @note/@warning)
+
+Where NOT to add:
+❌ INSIDE existing /* */ blocks
+❌ REPLACING existing comments
+❌ MODIFYING existing comment text
+
+CONSEQUENCES OF VIOLATION
+--------------------------
+
+If ANY original comment is modified:
+- Documentation automatically REJECTED
+- Complete redo required from scratch
+- No partial credit for quality work
+- Maintainer trust damaged
+
+WHY THIS MATTERS
+----------------
+
+- Legal: License headers required for compliance
+- Historical: Evolution of codebase preserved
+- Professional: Respecting previous maintainers
+- Technical: Version control integrity maintained
+- Trust: Teams reject AI that destroys their work
+
+═══════════════════════════════════════════════════════════════════════
+
+VALIDATION TEST (Before Finalizing Each Function)
+Ask yourself these questions for every function:
+Basic Comprehension: Could a CS junior who has never seen this codebase explain what this function does in plain English?
+Design Understanding: Could they explain WHY this function exists and why it's implemented this way instead of simpler alternatives?
+Risk Awareness: Could they identify what could go wrong? (buffer overflows, race conditions, null derefs, etc.)
+Practical Confidence: Could they safely modify this function for a simple change? (e.g., add logging, change buffer size, add error check)
+
+If NO to any question, the documentation is incomplete. Add more @details, @warning, or @note sections until YES.
+
+DISCLOSURE AND DISCLAIMERS
+At the top of EVERY output file (after any existing license/copyright header), insert:
+/**
+@note AI-ASSISTED DOCUMENTATION
+This documentation was generated using AI (Claude 3.5 Sonnet / GPT-4) to
+accelerate onboarding for new maintainers. It represents a systematic analysis
+of the code as written and should be validated against actual behavior,
+unit tests, and integration tests.
+
+Speculative comments are marked with @note SPECULATION
+Technical debt is marked with @technical_debt tags
+Confidence levels are provided where uncertainty exists
+
+@warning VALIDATION REQUIRED
+This documentation has NOT been reviewed by the core development team.
+Always cross-reference with:
+Official project documentation
+Unit and integration tests
+Commit history and pull request discussions
+Community mailing lists / IRC / forums
+
+For questions or corrections, contact: [maintainer email / mailing list]
+
+@warning CONTRIBUTION POLICY
+Some projects do not accept AI-generated documentation pull requests.
+Check project CONTRIBUTING.md before submitting. This documentation is
+provided for educational and internal onboarding use. */
+
+Tone: Confident but cautious. We've done good work, but we're honest about limitations.
+
+CRITICAL GUIDELINES
+MANDATORY (No Exceptions):
+PRESERVE ALL EXISTING COMMENTS (license, copyright, history, author notes, etc.)
+Every function gets a Doxygen header
+Every function must have at least one @details paragraph explaining WHY or algorithm flow
+Every struct/enum in headers documented field-by-field
+All legacy FIXME/TODO/XXX converted to @todo
+All macros in headers get full documentation with gotchas
+
+STRONGLY ENCOURAGED:
+Every non-trivial variable gets documented (skip i, j loop counters only)
+Speculation marked explicitly: @note SPECULATION: This may be...
+Better to over-document than under-document (especially for new maintainers)
+Better to over-flag debt than miss issues (Phase 2 will triage false positives)
+Use Doxygen tags (@warning, @attention, @note, @todo) to make key info stand out
+
+FORMATTING:
+DON'T use // comments — stick to /* */ for universal compatibility
+Headers get interface-focused docs; .c files get implementation-focused docs
+Keep line length reasonable (80-100 chars) for readability in terminals
+Use consistent indentation matching the existing code style
+
+PHILOSOPHY:
+ERR ON THE SIDE OF BEING THOROUGH.
+A new maintainer's first week is better spent skimming extra comments than reverse-engineering silent assumptions.
+If you're unsure whether to document something, ask: "Would I want to know this if I were debugging a production outage at 3am?" If YES, document it.
+
+═══════════════════════════════════════════════════════════════════════
+              MANDATORY VALIDATION BEFORE SUBMISSION
+═══════════════════════════════════════════════════════════════════════
+
+Your documentation is INCOMPLETE without validation proof.
+
+You MUST perform these checks and include results:
+
+CHECK 1: Comment Count Verification
+------------------------------------
+Original comment lines: [Your count from pre-flight]
+Documented comment lines: [Your count from output]
+Delta: [Difference - should be positive (additions) only]
+
+Command used:
+  grep -c "/\*" original.c    # Result: [N]
+  grep -c "/\*" documented.c  # Result: [M]
+  Expected: M >= N (only additions allowed)
+
+CHECK 2: Diff Verification  
+--------------------------
+Run: diff -u original.c documented.c | grep "^-" | grep "/\*"
+
+Expected result: EMPTY (no lines starting with "-" that contain "/*")
+Your result: [paste output here, or state "EMPTY"]
+
+If NOT empty: You removed original comments. STOP. Fix before submitting.
+
+CHECK 3: Sample Verification
+----------------------------
+Pick 3 functions that had original comments.
+
+Function 1: [name]
+  Original comment at line [N]: [first 50 chars of comment]
+  Preserved? [YES/NO]
+
+Function 2: [name]
+  Original comment at line [N]: [first 50 chars of comment]
+  Preserved? [YES/NO]
+
+Function 3: [name]
+  Original comment at line [N]: [first 50 chars of comment]
+  Preserved? [YES/NO]
+
+All three must be YES.
+
+CHECK 4: Confidence Statement
+-----------------------------
+Rate your confidence: [___]%
+
+100% = "I verified every comment with diff/grep, all preserved exactly"
+<100% = STOP. Do not submit. Run validation checks until 100%.
+
+CHECK 5: Symbol Dictionary Completeness
+------------------------------------------
+Total symbols found in source: [___]
+  Breakdown:
+  - Constants/macros: [___]
+  - Error codes: [___]
+  - Special values: [___]
+  - Structure fields: [___]
+  - Globals: [___]
+  - Function params: [___]
+  - Local variables: [___]
+
+Total symbols documented in SYMBOL_DICTIONARY section: [___]
+Completeness percentage: [___]%
+
+Expected: 100% (or explicitly state why certain variables were excluded)
+
+If <95%: Explain what's missing and why:
+[Your explanation here]
+
+VALIDATION PROOF TEMPLATE
+--------------------------
+Include this statement with your submission:
+
+"VALIDATION COMPLETE
+- Original comments: [N]
+- Documented comments: [M] (added [M-N] new)
+- Diff check: EMPTY (no removals)
+- Sample check: 3/3 preserved
+- Symbol dictionary: [N] symbols documented ([___]% complete)
+- Confidence: 100%
+- I verified every original comment is preserved exactly."
+
+Without this statement and supporting data, documentation is REJECTED.
+
+═══════════════════════════════════════════════════════════════════════
+
+OUTPUT FORMAT
+Return ONLY the fully Doxygen-commented source code.
+Do not include:
+Summary paragraphs before/after code
+Explanations of what you did
+Meta-commentary about the analysis process
+
+Just provide:
+The complete, commented source code ready to save as a .c or .h file
+Properly formatted Doxygen comments
+All original code and comments preserved exactly
+
+COST AND COVERAGE NOTE
+This prompt is designed for FULL file analysis. The economics of AI-assisted documentation ($0.05-0.10 per file) make comprehensive coverage practical.
+
+Do not skip sections to save tokens. If you encounter context window limits:
+Process file in logical sections (e.g., by function)
+Maintain full documentation quality for each section
+Note if file requires multi-pass analysis
+
+Incomplete documentation defeats the purpose of systematic technical debt tracking and 30-day documentation bootcamps.
+
+═══════════════════════════════════════════════════════════════════════
+                   SELF-CHECK BEFORE SUBMISSION
+═══════════════════════════════════════════════════════════════════════
+
+Answer YES or NO to each question. Submit only if ALL are YES.
+
+DOCUMENTATION QUALITY
+---------------------
+[ ] Can a CS junior understand what each function does?
+[ ] Are all WHY questions answered (not just WHAT)?
+[ ] Are security implications documented?
+[ ] Are maintainer traps explicitly flagged?
+[ ] Is historical context provided where relevant?
+
+COMMENT PRESERVATION (CRITICAL)
+--------------------------------
+[ ] Did I extract original comments before starting?
+[ ] Did I count original comment lines (pre-flight)?
+[ ] Did I preserve EVERY original comment exactly?
+[ ] Can I prove preservation with diff output?
+[ ] Did I run CHECK 1-4 from validation section?
+[ ] Is my confidence level 100%?
+
+DOXYGEN COMPLIANCE
+------------------
+[ ] Does every function have @brief?
+[ ] Does every function have @details?
+[ ] Are all @param tags present and documented?
+[ ] Are @return values explained?
+[ ] Is file header complete?
+[ ] Is SYMBOL_DICTIONARY complete with checkpoint proof?
+
+GO/NO-GO DECISION
+-----------------
+
+If ANY answer above is NO:
+  → DO NOT SUBMIT
+  → Fix the issues
+  → Re-run checks
+  → Try again
+
+If ALL answers are YES:
+  → Include validation proof (from CHECK 4)
+  → Submit with confidence statement
+  → Proceed
+
+═══════════════════════════════════════════════════════════════════════
+
+ACCEPTANCE CRITERIA - READ BEFORE SUBMITTING
+═══════════════════════════════════════════════════════════════════════
+
+Your documentation will be ACCEPTED if:
+  ✅ All functions have comprehensive Doxygen headers
+  ✅ File header includes design rationale and traps
+  ✅ SYMBOL_DICTIONARY complete with all 7 categories
+  ✅ Checkpoint proof embedded in output
+  ✅ ALL original comments preserved exactly
+  ✅ Validation proof provided
+  ✅ Self-check shows all YES
+
+Your documentation will be REJECTED if:
+  ❌ ANY original comment modified/removed/relocated
+  ❌ No validation proof provided
+  ❌ No checkpoint proof in SYMBOL_DICTIONARY
+  ❌ Missing constants/error codes in dictionary
+  ❌ Self-check incomplete or has NO answers
+  ❌ Cannot prove comment preservation line-by-line
+
+PRIORITY HIERARCHY
+------------------
+1. Comment preservation (absolute requirement)
+2. Safety/security documentation (critical)
+3. Symbol dictionary completeness (critical)
+4. Documentation completeness (important)
+5. Documentation quality (important)
+6. Formatting/style (nice-to-have)
+
+Translation: A perfectly documented file with ONE modified comment = REJECTED
+            A basic documented file with all comments preserved = ACCEPTED
+
+When in doubt, err on the side of preservation.
+
+═══════════════════════════════════════════════════════════════════════
+                          END OF PROMPT
+═══════════════════════════════════════════════════════════════════════
