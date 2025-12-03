@@ -26,6 +26,9 @@ OPENSSL_DIR="/Users/basiladdington/Projects/tech-debt-showcase/local-repos/opens
 CLANG_TIDY=$(which clang-tidy)
 
 # Output report file
+# The location of the file inside the main openSSL directory keeps it out of github
+#   changes. This will be rather large file. Once the output is worthy of being
+#   saved, then moving it to the research/ folder for public use would be needed.
 REPORT_FILE="$OPENSSL_DIR/OPENSSL_TECH_DEBT_REPORT.txt"
 
 # -----------------------------
@@ -102,4 +105,6 @@ head -n 20 "$REPORT_FILE"
 
 echo "=================================================="
 echo "[INFO] OpenSSL Tech Debt Observatory report generation complete."
+echo " Don't forget to same the output file in the Showcase repo if ready"
+echo " to publish and document findings."
 echo "=================================================="
