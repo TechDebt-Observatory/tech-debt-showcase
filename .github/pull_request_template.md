@@ -40,4 +40,10 @@
 - [ ] README updated (if needed)
 - [ ] Tests/validation scripts updated (if needed)
 - [ ] Related documentation updated
+- [ ] Website/showcase review and updates completed
 - [ ] Ready for review
+
+## Rejection Notes
+<!-- If this PR is abandoned/rejected, document why -->
+<!-- Failed experiments are valuable research data! -->
+<!-- What did we learn? What would we do differently? -->
