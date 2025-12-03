@@ -1,0 +1,107 @@
+ * @section VARIABLE_DICTIONARY
+ *
+ * CONSTANTS AND MACROS (defined in dh.h, bn.h):
+ * 
+ * Size Limits:
+ * - DH_MIN_MODULUS_BITS: Minimum secure modulus size (typically 512 bits)
+ *     Below this threshold is considered cryptographically weak.
+ *     Historical note: 512 was acceptable in 1990s, now should be 2048+.
+ * - OPENSSL_DH_MAX_MODULUS_BITS: Maximum modulus for key GENERATION (10,000 bits)
+ *     Used to limit computational cost of key generation.
+ *     NOT appropriate for validation operations (that's the bug!).
+ * - OPENSSL_DH_CHECK_MAX_MODULUS_BITS: **SHOULD EXIST** for validation (32,768 bits)
+ *     This constant is MISSING from OpenSSL pre-patch.
+ *     CVE-2023-3446 fix adds this constant and checks against it.
+ *
+ * Validation Error Flags (bitwise OR'd in *ret parameter):
+ * - DH_CHECK_P_NOT_PRIME: 0x01 - Modulus p failed primality test
+ * - DH_CHECK_P_NOT_SAFE_PRIME: 0x02 - p is prime but not safe prime ((p-1)/2 not prime)
+ * - DH_NOT_SUITABLE_GENERATOR: 0x08 - Generator g out of valid range
+ * - DH_CHECK_Q_NOT_PRIME: 0x10 - Subgroup order q failed primality test
+ * - DH_CHECK_INVALID_Q_VALUE: 0x20 - q does not divide (p-1)
+ * - DH_CHECK_INVALID_J_VALUE: 0x40 - Cofactor j doesn't match (p-1)/q
+ * - DH_UNABLE_TO_CHECK_GENERATOR: 0x04 - Cannot verify generator (unusual)
+ * - DH_MODULUS_TOO_SMALL: Modulus below DH_MIN_MODULUS_BITS
+ * - DH_MODULUS_TOO_LARGE: Modulus above OPENSSL_DH_MAX_MODULUS_BITS
+ * - DH_CHECK_PUBKEY_TOO_SMALL: Public key <= 1 (invalid)
+ * - DH_CHECK_PUBKEY_TOO_LARGE: Public key >= p-1 (invalid)
+ * - DH_CHECK_PUBKEY_INVALID: Public key failed validation
+ *
+ * Special Values:
+ * - NID_undef: Numeric identifier undefined (used to check for known groups)
+ *     When DH_get_nid() returns NID_undef, parameters are custom (not RFC 7919).
+ * - FFC_PARAM_TYPE_DH: Constant for finite field crypto parameter type
+ *
+ * DH STRUCTURE FIELDS (accessed throughout this file):
+ * 
+ * DH Parameter Fields (const DH *dh):
+ * - dh->params.p: BIGNUM* - The modulus (large prime number)
+ *     Core security parameter. Must be prime for DH security.
+ *     Typical sizes: 2048, 3072, 4096 bits for modern crypto.
+ *     CVE-2023-3446: Attacker can supply arbitrarily large p.
+ * - dh->params.g: BIGNUM* - The generator
+ *     Must be in range [2, p-2] for cryptographic validity.
+ *     Common values: 2, 5, or specific values for safe prime groups.
+ * - dh->params.q: BIGNUM* - Optional subgroup order
+ *     If present, defines a prime-order subgroup of Z*_p.
+ *     Used for more efficient DH with better security proofs.
+ *     May be NULL if not using subgroup-based DH.
+ * - dh->params.j: BIGNUM* - Optional cofactor
+ *     If present, equals (p-1)/q. Used for validation consistency check.
+ *     Rarely populated in practice.
+ * - dh->libctx: OSSL_LIB_CTX* - OpenSSL library context
+ *     Used for memory allocation with specific library instance.
+ *     Enables multiple independent OpenSSL contexts in same process.
+ * - dh->priv_key: BIGNUM* - Private key
+ *     Random value in range [1, q-1] (or [1, p-2] if no q).
+ *     Must be kept secret. Used in key agreement: shared_secret = peer_pubkey^priv_key mod p.
+ * - dh->pub_key: BIGNUM* - Public key
+ *     Computed as g^priv_key mod p.
+ *     Shared with peer for key agreement.
+ *     Must be validated to prevent small subgroup attacks.
+ * - dh->length: int - Optional bit length for private key
+ *     If non-zero, specifies exact bit length for private key generation.
+ *     Used by approved safe prime groups to enforce key size.
+ *
+ * FUNCTION PARAMETERS (non-obvious semantics):
+ * 
+ * - const DH *dh: DH parameter structure (input)
+ *     "const" means we won't modify the structure itself.
+ *     However, OpenSSL sometimes casts away const for internal operations (legacy API).
+ *     Caller retains ownership; functions do NOT free this.
+ * 
+ * - int *ret: Validation result flags (output via pointer)
+ *     Set to 0 at function start, then OR'd with error flags.
+ *     Multiple errors can be present simultaneously.
+ *     Return value of function indicates fatal error (0) vs successful check (1).
+ *     Even if function returns 1, must check *ret for validation failures!
+ * 
+ * - const BIGNUM *pub_key / *priv_key: Key values (input)
+ *     Separate from dh structure to allow validation of external keys.
+ *     Caller retains ownership.
+ * 
+ * - BN_CTX *ctx: BIGNUM context for temporary allocations (internal)
+ *     Pool of temporary BIGNUMs to avoid repeated malloc/free.
+ *     Must call BN_CTX_start() before use, BN_CTX_end() after.
+ *     Allocated via BN_CTX_new_ex() which respects dh->libctx.
+ * 
+ * INTERNAL VARIABLES (temporary/local):
+ * - BIGNUM *t1, *t2, *tmp: Temporary BIGNUMs for arithmetic
+ *     Allocated from BN_CTX pool, automatically freed.
+ *     Used for intermediate calculations (p-1, g^q mod p, divisions, etc.).
+ * - int ok: Success flag for function (1=success, 0=error)
+ *     Used to track whether function completed successfully.
+ *     Errors jump to cleanup label, ok remains 0.
+ * - int r: Result from BN_check_prime() (-1=error, 0=composite, 1=probably prime)
+ *     Must check for all three cases: error, composite, prime.
+ * - int nid: Numeric identifier for known DH group (NID_undef if custom)
+ *     Used to short-circuit validation for RFC 7919 groups.
+ * - int errflags: Accumulator for validation error flags
+ *     Used in wrapper functions to collect errors before raising.
+ *
+ * GLOBAL STATE (none in this file):
+ * This file is stateless - all state passed via parameters.
+ * No static variables, no global state.
+ * Thread-safe at the file level (individual DH objects are not thread-safe).
+ *
+ * @section USAGE_EXAMPLE

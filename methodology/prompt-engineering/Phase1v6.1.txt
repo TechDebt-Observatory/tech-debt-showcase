@@ -1,4 +1,4 @@
-Version 6 of phase 1 prompt
+Version 6.1 of phase 1 prompt
 
 ═══════════════════════════════════════════════════════════════════════
                     🛑 CRITICAL REQUIREMENTS 🛑
@@ -98,7 +98,6 @@ where boring-but-critical variable documentation gets superficial treatment
 after 40 minutes of interesting security analysis.
 
 ═══════════════════════════════════════════════════════════════════════
-
 DOXYGEN-STYLE DOCUMENTATION STRUCTURE
 
 FILE HEADER (Top of File):
@@ -115,7 +114,7 @@ What should you read first to understand it?
 @section AI_ATTRIBUTION
 Documentation generated with assistance from Claude (Anthropic AI)
 Analysis date: [YYYY-MM-DD]
-Prompt version: 6.0
+Prompt version: 6.1
 Validated by: [to be filled during validation]
 
 @section DESIGN_RATIONALE
@@ -151,30 +150,131 @@ HISTORICAL: The goto cleanup pattern was added after a double-free in 2015
 
 List these explicitly. If none exist, state: "No known maintainer traps at time of analysis."
 
-@section VARIABLE_DICTIONARY
-Document all globals, file-scoped statics, and non-trivial function parameters:
-Global g_ssl_index: int - thread-local storage index for SSL callbacks
-Static s_rng_seeded: bool - internal RNG state flag (DO NOT TOUCH DIRECTLY)
-Skip trivial loop counters like i, j unless they have non-obvious semantics
+@section SYMBOL_DICTIONARY
 
-🛑 CHECKPOINT: VARIABLE_DICTIONARY COMPLETENESS GATE 🛑
+**IMPORTANT**: This section documents ALL symbols, constants, and references needed
+to understand this file - not just variables. Think of this as a "reference manual"
+for anyone reading the code.
+
+Document the following categories (create subsections as needed):
+
+1. CONSTANTS AND MACROS (from headers or #define):
+   - Size limits (MIN/MAX values)
+   - Configuration constants  
+   - Compile-time settings
+   - Bitflags and masks
+   Example:
+   - DH_MIN_MODULUS_BITS: int constant - Minimum secure modulus size (typically 2048)
+   - OPENSSL_DH_MAX_MODULUS_BITS: int constant - Maximum modulus for key generation (10,000 bits)
+
+2. ERROR CODES / STATUS FLAGS:
+   - Enumerate each error constant individually
+   - Include hex values if available
+   - Explain what triggers each error
+   Example:
+   - DH_CHECK_P_NOT_PRIME: 0x01 - Modulus p failed primality test
+   - DH_CHECK_P_NOT_SAFE_PRIME: 0x02 - p is prime but (p-1)/2 is not prime
+   - DH_NOT_SUITABLE_GENERATOR: 0x08 - Generator g out of valid range [2, p-2]
+
+3. SPECIAL VALUES / SENTINEL VALUES:
+   - Constants representing "undefined" or "not found"
+   - Magic numbers with specific meanings
+   Example:
+   - NID_undef: int constant - Numeric identifier undefined (indicates custom DH params, not RFC group)
+   - FFC_PARAM_TYPE_DH: enum value - Finite field crypto parameter type for DH
+
+4. STRUCTURE FIELDS (accessed in this file):
+   - Document each struct member used
+   - Include type, purpose, constraints
+   - Mention ownership and lifecycle
+   Example:
+   - dh->params.p: BIGNUM* - Prime modulus, must be odd, typically 2048+ bits, core security parameter
+   - dh->params.g: BIGNUM* - Generator, must satisfy 1 < g < p-1
+   - dh->libctx: OSSL_LIB_CTX* - OpenSSL library context for memory allocation
+
+5. GLOBAL VARIABLES (if any in this file):
+   - Document scope (file-static vs extern)
+   - Document thread-safety properties
+   Example:
+   - static s_rng_seeded: bool - Internal RNG state flag (DO NOT TOUCH DIRECTLY, not thread-safe)
+
+6. FUNCTION PARAMETERS (non-obvious ones):
+   - Document direction ([in], [out], [in,out])
+   - Document ownership transfer
+   - Document NULL-ability
+   Example:
+   - const DH *dh: DH parameter structure (input), const means we won't modify structure, caller retains ownership
+   - int *ret: Validation result flags (output via pointer), set to 0 at start, OR'd with error flags
+
+7. LOCAL/TEMPORARY VARIABLES (significant ones):
+   - Skip trivial loop counters (i, j) unless they have special meaning
+   - Document temporary computation variables
+   - Document state tracking variables
+   Example:
+   - BIGNUM *t1, *t2: Temporary values for modular arithmetic (freed via BN_CTX_end)
+   - int ok: Success flag (1=success, 0=error), tracks whether function completed successfully
+   - BN_CTX *ctx: BIGNUM context for temporary allocations, must call BN_CTX_start before use
+
+COUNTING RULES FOR COMPLETENESS:
+- One bullet point = one entry (even if brief)
+- Grouped sub-items count as ONE parent entry (e.g., "tmp, t1, t2" = 1 entry)
+- Individual error flags = separate entries (DH_CHECK_P_NOT_PRIME is entry 1, DH_CHECK_Q_NOT_PRIME is entry 2)
+- Constants = separate entries (DH_MIN_MODULUS_BITS is entry 1, DH_MAX_MODULUS_BITS is entry 2)
+- Structure fields = separate entries (dh->params.p is entry 1, dh->params.g is entry 2)
+
+ORGANIZATION:
+Use clear subsection headers:
+  Constants and Macros:
+  Error Flag Constants:
+  Special Values:
+  Structure Fields:
+  Function Parameters:
+  Local Variables:
+
+🛑 CHECKPOINT: SYMBOL_DICTIONARY COMPLETENESS GATE 🛑
 -------------------------------------------------------
 BEFORE proceeding to write file headers or function documentation, you MUST:
 
-1. Count total variables in source file (globals, file-scoped statics, significant params)
-2. Create dictionary entry for EACH variable
-3. VALIDATE: Does my dictionary count match my scan count?
+1. Scan ENTIRE file for symbols (not just first 50%)
+2. Count total symbols in each category:
+   - Constants/macros: [___]
+   - Error codes: [___]
+   - Special values: [___]
+   - Structure fields: [___]
+   - Globals: [___]
+   - Function params: [___]
+   - Local variables: [___]
+   TOTAL: [___]
 
-Self-check questions:
-- Did I scan the ENTIRE file for variables (not just first 50%)?
-- Did I document every global and static variable?
-- Are complex function parameters explained?
-- Is my count: [N variables scanned] = [N dictionary entries]?
+3. Create dictionary entry for EACH symbol
+4. VALIDATE: Does dictionary entry count = symbol count?
+5. INSERT THIS PROOF IN YOUR OUTPUT FILE after @section SYMBOL_DICTIONARY:
 
-DO NOT PROCEED TO FILE HEADER until you answer YES to all questions.
+/**
+ * @note CHECKPOINT PROOF - SYMBOL_DICTIONARY COMPLETENESS
+ * Symbols scanned: [TOTAL from step 2]
+ * Dictionary entries created: [count of bullets in your dictionary]
+ * Completeness: [scanned] = [documented] ? YES/NO
+ * 
+ * Breakdown:
+ * - Constants/macros: [___] scanned, [___] documented
+ * - Error codes: [___] scanned, [___] documented
+ * - Special values: [___] scanned, [___] documented
+ * - Structure fields: [___] scanned, [___] documented
+ * - Globals: [___] scanned, [___] documented
+ * - Function params: [___] scanned, [___] documented
+ * - Local variables: [___] scanned, [___] documented
+ * 
+ * Status: COMPLETE - Proceeding to file header documentation
+ */
+
+DO NOT PROCEED TO FILE HEADER until:
+- Completeness = YES
+- All categories documented
+- Checkpoint proof inserted in output
 
 This checkpoint prevents "attention fatigue" where interesting security 
-analysis gets priority over boring-but-critical variable documentation.
+analysis gets priority over boring-but-critical symbol documentation.
 -------------------------------------------------------
 
 @section USAGE_EXAMPLE
@@ -581,10 +681,19 @@ Rate your confidence: [___]%
 100% = "I verified every comment with diff/grep, all preserved exactly"
 <100% = STOP. Do not submit. Run validation checks until 100%.
 
-CHECK 5: Variable Dictionary Completeness
+CHECK 5: Symbol Dictionary Completeness
 ------------------------------------------
-Total variables found in source (globals, statics, significant params): [___]
-Total variables documented in VARIABLE_DICTIONARY section: [___]
+Total symbols found in source: [___]
+  Breakdown:
+  - Constants/macros: [___]
+  - Error codes: [___]
+  - Special values: [___]
+  - Structure fields: [___]
+  - Globals: [___]
+  - Function params: [___]
+  - Local variables: [___]
+
+Total symbols documented in SYMBOL_DICTIONARY section: [___]
 Completeness percentage: [___]%
 
 Expected: 100% (or explicitly state why certain variables were excluded)
@@ -601,7 +710,7 @@ Include this statement with your submission:
 - Documented comments: [M] (added [M-N] new)
 - Diff check: EMPTY (no removals)
 - Sample check: 3/3 preserved
-- Variable dictionary: [N] variables documented ([___]% complete)
+- Symbol dictionary: [N] symbols documented ([___]% complete)
 - Confidence: 100%
 - I verified every original comment is preserved exactly."
 
@@ -661,6 +770,7 @@ DOXYGEN COMPLIANCE
 [ ] Are all @param tags present and documented?
 [ ] Are @return values explained?
 [ ] Is file header complete?
+[ ] Is SYMBOL_DICTIONARY complete with checkpoint proof?
 
 GO/NO-GO DECISION
 -----------------
@@ -684,6 +794,8 @@ ACCEPTANCE CRITERIA - READ BEFORE SUBMITTING
 Your documentation will be ACCEPTED if:
   ✅ All functions have comprehensive Doxygen headers
   ✅ File header includes design rationale and traps
+  ✅ SYMBOL_DICTIONARY complete with all 7 categories
+  ✅ Checkpoint proof embedded in output
   ✅ ALL original comments preserved exactly
   ✅ Validation proof provided
   ✅ Self-check shows all YES
@@ -691,6 +803,8 @@ Your documentation will be ACCEPTED if:
 Your documentation will be REJECTED if:
   ❌ ANY original comment modified/removed/relocated
   ❌ No validation proof provided
+  ❌ No checkpoint proof in SYMBOL_DICTIONARY
+  ❌ Missing constants/error codes in dictionary
   ❌ Self-check incomplete or has NO answers
   ❌ Cannot prove comment preservation line-by-line
 
@@ -698,9 +812,10 @@ PRIORITY HIERARCHY
 ------------------
 1. Comment preservation (absolute requirement)
 2. Safety/security documentation (critical)
-3. Documentation completeness (important)
-4. Documentation quality (important)
-5. Formatting/style (nice-to-have)
+3. Symbol dictionary completeness (critical)
+4. Documentation completeness (important)
+5. Documentation quality (important)
+6. Formatting/style (nice-to-have)
 
 Translation: A perfectly documented file with ONE modified comment = REJECTED
             A basic documented file with all comments preserved = ACCEPTED
