@@ -71,6 +71,34 @@ Generate Doxygen-compatible documentation that serves as a complete onboarding g
 OPTIMIZE FOR: Clarity for human readers. Flag everything that might confuse a new maintainer.
 CONTEXT: This is Phase 1 of a documentation pipeline. Phase 2 will validate and refine. We accept some false positives over silent issues. Better to over-document than leave maintainers guessing.
 
+═══════════════════════════════════════════════════════════════════════
+            🛑 DOCUMENTATION ORDER - FOLLOW EXACTLY 🛑
+═══════════════════════════════════════════════════════════════════════
+
+You MUST complete documentation in this sequence:
+
+STEP 1: VARIABLE_DICTIONARY (First Pass - During Initial Scan)
+Before writing anything else, scan the entire file and create the variable dictionary.
+This ensures you document variables while they're fresh in your attention.
+
+STEP 2: FILE HEADER
+After variables are documented, write the complete file header.
+
+STEP 3: FUNCTION HEADERS  
+Document each function in order.
+
+STEP 4: INLINE COMMENTS
+Add inline documentation for complex logic.
+
+STEP 5: TECHNICAL DEBT MARKERS
+Flag issues discovered during documentation.
+
+Why this order? Documenting variables FIRST prevents "attention fatigue" 
+where boring-but-critical variable documentation gets superficial treatment 
+after 40 minutes of interesting security analysis.
+
+═══════════════════════════════════════════════════════════════════════
+
 DOXYGEN-STYLE DOCUMENTATION STRUCTURE
 
 FILE HEADER (Top of File):
@@ -128,6 +156,26 @@ Document all globals, file-scoped statics, and non-trivial function parameters:
 Global g_ssl_index: int - thread-local storage index for SSL callbacks
 Static s_rng_seeded: bool - internal RNG state flag (DO NOT TOUCH DIRECTLY)
 Skip trivial loop counters like i, j unless they have non-obvious semantics
+
+🛑 CHECKPOINT: VARIABLE_DICTIONARY COMPLETENESS GATE 🛑
+-------------------------------------------------------
+BEFORE proceeding to write file headers or function documentation, you MUST:
+
+1. Count total variables in source file (globals, file-scoped statics, significant params)
+2. Create dictionary entry for EACH variable
+3. VALIDATE: Does my dictionary count match my scan count?
+
+Self-check questions:
+- Did I scan the ENTIRE file for variables (not just first 50%)?
+- Did I document every global and static variable?
+- Are complex function parameters explained?
+- Is my count: [N variables scanned] = [N dictionary entries]?
+
+DO NOT PROCEED TO FILE HEADER until you answer YES to all questions.
+
+This checkpoint prevents "attention fatigue" where interesting security 
+analysis gets priority over boring-but-critical variable documentation.
+-------------------------------------------------------
 
 @section USAGE_EXAMPLE
 @code
@@ -533,6 +581,17 @@ Rate your confidence: [___]%
 100% = "I verified every comment with diff/grep, all preserved exactly"
 <100% = STOP. Do not submit. Run validation checks until 100%.
 
+CHECK 5: Variable Dictionary Completeness
+------------------------------------------
+Total variables found in source (globals, statics, significant params): [___]
+Total variables documented in VARIABLE_DICTIONARY section: [___]
+Completeness percentage: [___]%
+
+Expected: 100% (or explicitly state why certain variables were excluded)
+
+If <95%: Explain what's missing and why:
+[Your explanation here]
+
 VALIDATION PROOF TEMPLATE
 --------------------------
 Include this statement with your submission:
@@ -542,6 +601,7 @@ Include this statement with your submission:
 - Documented comments: [M] (added [M-N] new)
 - Diff check: EMPTY (no removals)
 - Sample check: 3/3 preserved
+- Variable dictionary: [N] variables documented ([___]% complete)
 - Confidence: 100%
 - I verified every original comment is preserved exactly."
 
