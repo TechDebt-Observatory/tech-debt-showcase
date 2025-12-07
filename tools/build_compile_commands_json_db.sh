@@ -9,6 +9,7 @@
 #   - Can be run from tools/ directory.
 #   - Prints detailed screen output.
 #   - Supports Intel (x86_64) and Apple Silicon (arm64) macOS.
+#   - AI Generated chatgpt
 # =========================================================
 
 set -e
