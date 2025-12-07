@@ -23,7 +23,7 @@ This implementation provides a **complete 4D documentation framework** for shell
    - Python adaptation guidelines
    - Multiple examples and quick reference
 
-2. **📝 Script Template** (`/tools/templates/script_template.sh`)
+2. **📝 Script Template** (`/tools/docs/templates/script_template.sh`)
    - Ready-to-use template for new shell scripts
    - Complete 4D header with all dimensions
    - Configuration section template
@@ -32,7 +32,7 @@ This implementation provides a **complete 4D documentation framework** for shell
    - Function documentation template
    - Completion message template
 
-3. **🐍 Python Template** (`/tools/templates/python_template.py`)
+3. **🐍 Python Template** (`/tools/docs/templates/python_template.py`)
    - Python-specific adaptation of 4D framework
    - Module-level docstring with 4D dimensions
    - Function documentation templates
