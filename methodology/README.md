@@ -26,11 +26,11 @@ This directory contains the **methodological frameworks and documentation standa
   - Quick reference cards
   - Print for desk reference
 
-- **📝 Templates:** See `/tools/templates/`
+- **📝 Templates:** See `/tools/docs/templates/`
   - `script_template.sh` - Shell script template
   - `python_template.py` - Python template
 
-- **✅ Status:** See `/tools/DOCUMENTATION_STATUS.md`
+- **✅ Status:** See `/tools/docs/STATUS.md`
   - Progress tracking
   - Script inventory
   - Implementation roadmap
@@ -135,7 +135,7 @@ methodology/
 
 - Start here: `/QUICK_START.md`
 - Complete guide: `script-documentation-standard.md`
-- Templates: `/tools/templates/`
+- Templates: `/tools/docs/templates/`
 - Examples: `/tools/cve_2023_3446_forensics.sh`
 
 ### For C/C++ Code

@@ -29,10 +29,10 @@ A **lightweight framework** for documenting shell scripts and Python utilities w
 **1. Pick your template:**
 ```bash
 # For shell scripts
-cp /tools/templates/script_template.sh /tools/my-script.sh
+cp /tools/docs/templates/script_template.sh /tools/my-script.sh
 
 # For Python
-cp /tools/templates/python_template.py /tools/my-script.py
+cp /tools/docs/templates/python_template.py /tools/my-script.py
 ```
 
 **2. Fill in the 4D header:**
@@ -388,8 +388,8 @@ Future you (or others) may not find it obvious. Think:
 - **Implementation Summary:** `/IMPLEMENTATION_SUMMARY.md`
 
 ### Templates
-- **Shell Scripts:** `/tools/templates/script_template.sh`
-- **Python:** `/tools/templates/python_template.py`
+- **Shell Scripts:** `/tools/docs/templates/script_template.sh`
+- **Python:** `/tools/docs/templates/python_template.py`
 
 ### Examples
 - **Gold Standard:** `/tools/cve_2023_3446_forensics.sh`
@@ -407,7 +407,7 @@ Future you (or others) may not find it obvious. Think:
 
 3. **Copy template and fill in:**
    ```bash
-   cp /tools/templates/script_template.sh /tools/my-script.sh
+   cp /tools/docs/templates/script_template.sh /tools/my-script.sh
    ```
 
 4. **Follow examples:**

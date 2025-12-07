@@ -46,10 +46,11 @@ I've successfully implemented a **complete 4D documentation framework** for all 
 └── script-documentation-standard.md    (Complete 4D framework guide)
 
 /tools/
-├── DOCUMENTATION_STATUS.md             (Progress tracker)
-└── templates/
-    ├── script_template.sh              (Shell script template)
-    └── python_template.py              (Python template)
+├── docs/
+│   ├── STATUS.md                           (Progress tracker)
+│   └── templates/
+│       ├── script_template.sh              (Shell script template)
+│       └── python_template.py              (Python template)
 
 /                                       (Project root)
 ├── IMPLEMENTATION_SUMMARY.md           (Complete overview)
@@ -184,7 +185,7 @@ I've successfully implemented a **complete 4D documentation framework** for all 
 
 ```bash
 # 1. Copy template
-cp /tools/templates/script_template.sh /tools/my-new-script.sh
+cp /tools/docs/templates/script_template.sh /tools/my-new-script.sh
 
 # 2. Fill in 4D header
 # - @purpose: What problem am I solving?
@@ -373,8 +374,8 @@ This script demonstrates all 4D principles:
 
 ### Templates
 
-- **Shell Scripts:** `/tools/templates/script_template.sh`
-- **Python:** `/tools/templates/python_template.py`
+- **Shell Scripts:** `/tools/docs/templates/script_template.sh`
+- **Python:** `/tools/docs/templates/python_template.py`
 
 ### Examples
 
@@ -445,9 +446,9 @@ This script demonstrates all 4D principles:
 ### Deliverables Checklist
 
 ✅ `/methodology/script-documentation-standard.md` - Complete style guide  
-✅ `/tools/templates/script_template.sh` - Shell script template  
-✅ `/tools/templates/python_template.py` - Python template  
-✅ `/tools/DOCUMENTATION_STATUS.md` - Progress tracker  
+✅ `/tools/docs/templates/script_template.sh` - Shell script template  
+✅ `/tools/docs/templates/python_template.py` - Python template  
+✅ `/tools/docs/STATUS.md` - Progress tracker  
 ✅ `/IMPLEMENTATION_SUMMARY.md` - Complete overview  
 ✅ `/QUICK_START.md` - 10-minute guide  
 ✅ `/VISUAL_GUIDE.md` - Visual reference  
@@ -506,9 +507,9 @@ The 4D documentation framework is **complete and ready for immediate use**. You 
 Total documentation delivered: ~80KB
 
 /methodology/script-documentation-standard.md    18KB
-/tools/templates/script_template.sh              8KB
-/tools/templates/python_template.py             10KB
-/tools/DOCUMENTATION_STATUS.md                  12KB
+/tools/docs/templates/script_template.sh         8KB
+/tools/docs/templates/python_template.py        10KB
+/tools/docs/STATUS.md                           12KB
 /IMPLEMENTATION_SUMMARY.md                      15KB
 /QUICK_START.md                                 12KB
 /VISUAL_GUIDE.md                                 8KB
