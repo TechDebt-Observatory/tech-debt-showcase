@@ -1,4 +1,4 @@
-Version 6.3 (RAG) of phase 1 prompt
+Version 6.2 (RAG) of phase 1 prompt
 
 ═══════════════════════════════════════════════════════════════════════
                     🛑 CRITICAL REQUIREMENTS 🛑
