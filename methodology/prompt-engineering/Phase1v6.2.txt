@@ -1,4 +1,4 @@
-Version 6.1 of phase 1 prompt
+Version 6.3 (RAG) of phase 1 prompt
 
 ═══════════════════════════════════════════════════════════════════════
                     🛑 CRITICAL REQUIREMENTS 🛑
@@ -67,6 +67,38 @@ Pass a code comprehension test after reading only the comments
 Quality Standard: Ask yourself: "Could a CS junior who has never seen this codebase explain what this function does, WHY it exists, what could go wrong, and modify it safely?" If NO, the documentation is incomplete.
 
 GOAL
+INPUTS AND KNOWLEDGE PRIORITY
+You may rely ONLY on:
+1. SOURCE_CODE: the C/C++ file being documented (single source of truth).
+2. EXISTING_COMMENTS: must be preserved exactly as specified above.
+3. RAG_CONTEXT (optional): short excerpts provided alongside the source, such as:
+   - Official project documentation (e.g., OpenSSL manpages, design notes, API docs).
+   - Security advisories, CVE descriptions, and vulnerability write-ups.
+   - Historical design docs, release notes, and migration guides for this module.
+When there is any conflict, follow this priority:
+SOURCE_CODE > EXISTING_COMMENTS > RAG_CONTEXT.
+If a statement is not clearly supported by these inputs, either omit it or mark it explicitly as speculation via @note SPECULATION. Keep speculation brief.
+
+SIX REQUIRED DOCUMENTATION DIMENSIONS
+Across the file header, function headers, inline comments, and SYMBOL_DICTIONARY, your documentation MUST explicitly cover these six dimensions for each significant unit (file and functions):
+1. Intent – What this code is trying to achieve in domain terms (not line-by-line details).
+2. History / Provenance – Relevant CVEs, major refactors, deprecations, API migrations, and legacy behavior when present in RAG_CONTEXT or existing comments. If none are known, state “None known from available context.”
+3. Scope & Interfaces – Inputs, outputs, side effects, global state, external APIs (e.g., OpenSSL, OS calls), and ownership/NULL-ability rules.
+4. Control & Data Flow – How data moves through branches, loops, and key state transitions; highlight paths that impact correctness or security.
+5. Security & Invariants – Preconditions, postconditions, bounds, lifetimes, threading and error-handling invariants, especially those tied to security or correctness.
+6. Architecture & Dependencies – How this code fits into the larger subsystem (callers, callees, protocols, data formats, standards, modules).
+
+MAP THESE DIMENSIONS AS FOLLOWS:
+- File header: High-level Intent, Architecture & Dependencies, key Security & Invariants, and any known History / Provenance.
+- Function headers: Per-function Intent, Scope & Interfaces, Control & Data Flow, and Security & Invariants. Include local History / Provenance when function-specific (e.g., CVE fix).
+- Inline comments: Localized Control & Data Flow explanations, Security & Invariants at tricky lines, and maintainer traps or legacy quirks.
+- SYMBOL_DICTIONARY: Detailed Scope & Interfaces plus security-critical invariants for symbols (parameters, globals, struct fields, etc.), including any History / Provenance when tied to specific symbols.
+
+When using RAG_CONTEXT, prefer:
+- Documents that reference this file, function names, data structures, or related CVE IDs.
+- Newer documents when multiple sources conflict, while still deferring to actual code behavior.
+Use @note, @warning, @technical_debt, and @todo tags to connect external knowledge (e.g., CVE descriptions, spec sections, deprecation notes) to the specific code locations they affect.
+
 Generate Doxygen-compatible documentation that serves as a complete onboarding guide and security audit reference.
 OPTIMIZE FOR: Clarity for human readers. Flag everything that might confuse a new maintainer.
 CONTEXT: This is Phase 1 of a documentation pipeline. Phase 2 will validate and refine. We accept some false positives over silent issues. Better to over-document than leave maintainers guessing.
