@@ -1,110 +1,293 @@
 #!/usr/bin/env bash
-# =========================================================
-# OpenSSL Tech Debt Observatory - Tech Debt Reporter
-# Author: Basil Addington
-# Purpose: Run clang-tidy across OpenSSL repo, focusing on
-#          high-priority tech debt, and generate a summarized
-#          report for analysis.
-# Notes:
-#   - Can be run from tools/ directory.
-#   - Reads compile_commands.json from OpenSSL root.
-#   - Prints screen output and saves report to OPENSSL_REPORT.txt
-#   - AI Generated chatgpt
-# =========================================================
+################################################################################
+# generate_tech_debt-report.sh - OpenSSL Tech Debt Reporter
+################################################################################
+#
+# @purpose: Automated clang-tidy analysis across OpenSSL codebase
+#   - Scan all C files in apps/, crypto/, providers/ directories
+#   - Generate comprehensive tech debt report with high-priority checks
+#   - Produce actionable findings for technical debt reduction
+#   - Support Tech Debt Observatory research and documentation
+#   - Enable reproducible analysis for OpenSSL contributions
+#
+# @workflow: 5-phase analysis pipeline
+#   Phase 1: Configuration and Validation
+#     └─> Verify OpenSSL directory and compile_commands.json
+#     └─> Initialize report file and clang-tidy path
+#
+#   Phase 2: File Discovery
+#     └─> Find all .c files in target directories
+#     └─> Count files for progress tracking
+#
+#   Phase 3: Static Analysis
+#     └─> Run clang-tidy on each file with compile database
+#     └─> Apply high-priority check categories
+#     └─> Collect findings in report file
+#
+#   Phase 4: Report Generation
+#     └─> Append summary statistics
+#     └─> Display sample output
+#
+#   Phase 5: Completion
+#     └─> Show final status and next steps
+#
+# @dependencies: OpenSSL build environment
+#   System requirements:
+#     - Bash 4.0+ (for associative arrays in future enhancements)
+#     - clang-tidy installed and in PATH
+#     - OpenSSL repository cloned locally
+#
+#   File structure:
+#     - $OPENSSL_DIR/compile_commands.json (REQUIRED)
+#     - $OPENSSL_DIR/apps/ (source directory)
+#     - $OPENSSL_DIR/crypto/ (source directory)
+#     - $OPENSSL_DIR/providers/ (source directory)
+#
+#   Prerequisites:
+#     - Must run build_compile_db.sh BEFORE this script
+#     - compile_commands.json must be fresh (recent build)
+#     - OpenSSL must be configured and built
+#
+# @gotchas: Analysis and performance considerations
+#   File Size:
+#     - Report file can be 50-200MB for full OpenSSL scan
+#     - Stored in OPENSSL_DIR (not tracked by git)
+#     - Must manually copy to research/ folder for publishing
+#     - Large reports can slow down text editors
+#
+#   Analysis Time:
+#     - Full scan takes 15-45 minutes depending on hardware
+#     - Progress counter shows current file being analyzed
+#     - Can be interrupted with Ctrl+C (partial report saved)
+#     - Consider running in screen/tmux for long sessions
+#
+#   Check Categories:
+#     - bugprone-*: Detects common programming errors
+#     - clang-analyzer-*: Deep static analysis (slowest)
+#     - performance-*: Performance anti-patterns
+#     - readability-*: Code clarity issues
+#     - cppcoreguidelines-*: C++ Core Guidelines violations
+#     - Add/remove categories based on research focus
+#
+#   Compile Database:
+#     - compile_commands.json MUST match current source
+#     - Stale database causes incorrect analysis results
+#     - Rebuild if OpenSSL configuration changes
+#     - Database includes compiler flags and include paths
+#
+#   Error Handling:
+#     - Individual file failures don't stop analysis (|| true)
+#     - -quiet suppresses clang-tidy progress messages
+#     - stderr redirected to report file (2>&1)
+#     - set -e doesn't apply to clang-tidy failures
+#
+#   Path Assumptions:
+#     - OPENSSL_DIR is hardcoded (edit for different repos)
+#     - Assumes standard OpenSSL directory layout
+#     - Only scans apps/, crypto/, providers/ (not test/, ssl/)
+#     - Fine-grained file selection possible with find filters
+#
+# USAGE:
+#   ./generate_tech_debt-report.sh
+#   # No arguments - fully automated
+#   # Run from any directory (script changes to OPENSSL_DIR)
+#   # Expected runtime: 15-45 minutes
+#
+# OUTPUT:
+#   Report file:
+#     - $OPENSSL_DIR/OPENSSL_TECH_DEBT_REPORT.txt
+#     - Contains all clang-tidy findings
+#     - Organized by file with line numbers
+#     - Includes severity and check names
+#     - Sample shown on console (first 20 lines)
+#
+#   Console output:
+#     - Progress tracking (file N of TOTAL)
+#     - Phase status messages
+#     - Report location and sample
+#     - Next steps for publishing
+#
+# RELATED SCRIPTS:
+#   - build_compile_db.sh - Generate compile_commands.json (run first)
+#   - analyze-comments.sh - Comment ratio analysis
+#   - prepare-worst-cve.sh - CVE file prioritization
+#
+# NOTES:
+#   - Originally generated by ChatGPT, enhanced with 4D documentation
+#   - Report saved outside git tracking (too large for repository)
+#   - Move to research/ folder manually when ready to publish
+#   - Consider filtering findings by severity for smaller reports
+#
+################################################################################
 
-set -e
-set -o pipefail
+set -e          # Exit on any error
+set -o pipefail # Catch errors in pipelines
 
-# -----------------------------
-# CONFIGURATION
-# -----------------------------
+# ============================================
+# PHASE 1: Configuration and Validation
+# @purpose: Set up environment and verify prerequisites
+# @why: Fail fast if requirements not met
+# @method: Check directory, file, and tool existence
+# @output: Validated environment ready for analysis
+# @gotcha: OPENSSL_DIR is hardcoded - edit for different repos
+# ============================================
+
+# ===========================================
+# CONFIGURATION SECTION
+# @purpose: Define paths and parameters
+# ===========================================
 
 # Absolute path to OpenSSL repo
+# WHY: Hardcoded path - consider environment variable for flexibility
 OPENSSL_DIR="/Users/basiladdington/Projects/tech-debt-showcase/local-repos/openssl"
 
-# Path to clang-tidy (adjust if installed elsewhere)
+# Path to clang-tidy
+# WHY: Use 'which' to find in PATH, fail if not installed
 CLANG_TIDY=$(which clang-tidy)
 
 # Output report file
-# The location of the file inside the main openSSL directory keeps it out of github
-#   changes. This will be rather large file. Once the output is worthy of being
-#   saved, then moving it to the research/ folder for public use would be needed.
+# WHY: Store in OPENSSL_DIR to keep out of git tracking
+# WHY: Report can be 50-200MB - too large for repository
+# NOTE: Manually copy to research/ folder when ready to publish
 REPORT_FILE="$OPENSSL_DIR/OPENSSL_TECH_DEBT_REPORT.txt"
 
-# -----------------------------
-# START SCRIPT
-# -----------------------------
 echo "=================================================="
 echo "[INFO] OpenSSL Tech Debt Observatory - Tech Debt Reporter"
 echo "[INFO] OpenSSL repo: $OPENSSL_DIR"
 echo "[INFO] Using clang-tidy: $CLANG_TIDY"
 echo "=================================================="
 
-# -----------------------------
 # Verify OpenSSL directory exists
-# -----------------------------
+# WHY: Fail fast with clear error if repo not found
 if [[ ! -d "$OPENSSL_DIR" ]]; then
     echo "[ERROR] OpenSSL directory not found: $OPENSSL_DIR"
+    echo ""
+    echo "Please update OPENSSL_DIR variable or clone OpenSSL:"
+    echo "  git clone https://github.com/openssl/openssl.git $OPENSSL_DIR"
+    echo ""
     exit 1
 fi
 
-# -----------------------------
 # Move into OpenSSL directory
-# -----------------------------
+# WHY: clang-tidy needs to run from repo root for relative paths
 cd "$OPENSSL_DIR"
 echo "[INFO] Entered OpenSSL directory: $(pwd)"
 
-# -----------------------------
 # Verify compile_commands.json exists
-# -----------------------------
+# WHY: compile_commands.json required for accurate clang-tidy analysis
+# WHY: Contains compiler flags, include paths, and build configuration
 if [[ ! -f compile_commands.json ]]; then
-    echo "[ERROR] compile_commands.json not found! Run build_compile_db.sh first."
+    echo "[ERROR] compile_commands.json not found!"
+    echo ""
+    echo "Run build_compile_db.sh first to generate compile database:"
+    echo "  cd $OPENSSL_DIR"
+    echo "  ../tools/build_compile_db.sh"
+    echo ""
     exit 1
 fi
 
-# -----------------------------
-# Clear previous report
-# -----------------------------
-rm -f "$REPORT_FILE"
-echo "[INFO] Generating new tech debt report..."
-echo "OpenSSL Tech Debt Observatory Report" >> "$REPORT_FILE"
-echo "Generated: $(date)" >> "$REPORT_FILE"
-echo "==================================================" >> "$REPORT_FILE"
+# ============================================
+# PHASE 2: Report Initialization
+# @purpose: Clear old report and create header
+# @why: Ensure fresh analysis results
+# @method: Remove old file, write header with grouped redirects
+# @output: New report file with header
+# @gotcha: File can grow to 50-200MB during analysis
+# ============================================
 
-# -----------------------------
+# Clear previous report
+# WHY: Ensure we don't append to stale analysis results
+rm -f "$REPORT_FILE"
+
+echo "[INFO] Generating new tech debt report..."
+
+# Write report header
+# WHY: Group redirects for efficiency (SC2129 fix)
+# WHY: Single file open instead of three separate opens
+{
+    echo "OpenSSL Tech Debt Observatory Report"
+    echo "Generated: $(date)"
+    echo "=================================================="
+} > "$REPORT_FILE"
+
+# ============================================
+# PHASE 3: File Discovery
+# @purpose: Find all C source files to analyze
+# @why: Target specific directories for focused analysis
+# @method: Use find with -name filter on .c files
+# @output: List of files and count for progress tracking
+# @gotcha: Only scans apps/, crypto/, providers/ - not test/ or ssl/
+# ============================================
+
 # Find all .c files in apps/, crypto/, providers/
-# -----------------------------
+# WHY: Focus on production code, exclude tests and SSL protocol implementation
+# WHY: Can be extended with additional directories or filters
 FILES=$(find apps crypto providers -type f -name "*.c")
 
 TOTAL_FILES=$(echo "$FILES" | wc -l)
 echo "[INFO] Found $TOTAL_FILES C source files to analyze"
 
-# -----------------------------
-# Run clang-tidy on each file
-# -----------------------------
+# ============================================
+# PHASE 4: Static Analysis Execution
+# @purpose: Run clang-tidy on each file and collect findings
+# @why: Generate comprehensive tech debt report
+# @method: Loop through files with progress counter
+# @output: Analysis results appended to report file
+# @gotcha: Takes 15-45 minutes for full OpenSSL scan
+# ============================================
+
 COUNTER=0
 for FILE in $FILES; do
     COUNTER=$((COUNTER+1))
     echo "[INFO] [$COUNTER/$TOTAL_FILES] Analyzing $FILE ..."
     
-    # Run clang-tidy with compile_commands.json, high-priority checks only
+    # Run clang-tidy with compile_commands.json
+    # WHY: -p specifies compile database location
+    # WHY: -checks selects high-priority categories for tech debt focus
+    # WHY: -quiet suppresses clang-tidy progress (keeps console clean)
+    # WHY: 2>&1 captures both stdout and stderr in report
+    # WHY: || true prevents script exit on individual file failures
     "$CLANG_TIDY" -p="$OPENSSL_DIR" "$FILE" \
         -checks='bugprone-*,clang-analyzer-*,performance-*,readability-*,cppcoreguidelines-*' \
         -quiet >> "$REPORT_FILE" 2>&1 || true
 done
 
-# -----------------------------
-# Summarize results
-# -----------------------------
-echo "==================================================" >> "$REPORT_FILE"
-echo "[INFO] Tech debt scan complete." >> "$REPORT_FILE"
+# ============================================
+# PHASE 5: Report Summary and Completion
+# @purpose: Add summary footer and display results
+# @why: Provide completion status and next steps
+# @method: Append summary, show sample output
+# @output: Completed report with summary
+# @gotcha: Report file may be very large (50-200MB)
+# ============================================
+
+# Append summary footer
+# WHY: Group redirects for efficiency (SC2129 fix)
+{
+    echo "=================================================="
+    echo "[INFO] Tech debt scan complete."
+} >> "$REPORT_FILE"
+
 echo "[INFO] Report saved to $REPORT_FILE"
+
+# Display sample output
+# WHY: Show first 20 lines to verify report format
 echo "=================================================="
 echo "[INFO] Sample output (first 20 lines):"
 head -n 20 "$REPORT_FILE"
 
+# Final completion message
 echo "=================================================="
 echo "[INFO] OpenSSL Tech Debt Observatory report generation complete."
-echo " Don't forget to same the output file in the Showcase repo if ready"
-echo " to publish and document findings."
+echo ""
+echo "Next steps:"
+echo "  1. Review findings in report:"
+echo "     less $REPORT_FILE"
+echo ""
+echo "  2. If ready to publish, copy to research folder:"
+echo "     cp $REPORT_FILE ../research/openssl-tech-debt-$(date +%Y%m%d).txt"
+echo ""
+echo "  3. Consider filtering by severity or category:"
+echo "     grep -E 'warning:|error:' $REPORT_FILE > filtered-report.txt"
+echo ""
 echo "=================================================="

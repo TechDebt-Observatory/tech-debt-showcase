@@ -1,108 +1,369 @@
 #!/usr/bin/env bash
-# =========================================================
-# OpenSSL Tech Debt Observatory - Compile Commands Builder
-# Author: Basil Addington
-# Purpose: Clean, configure, and build OpenSSL 3.x/4.x
-#          with `bear` to generate a compile_commands.json
-#          suitable for clangd and clang-tidy analysis.
-# Notes:
-#   - Can be run from tools/ directory.
-#   - Prints detailed screen output.
-#   - Supports Intel (x86_64) and Apple Silicon (arm64) macOS.
-#   - AI Generated chatgpt
-# =========================================================
+################################################################################
+# build_compile_commands_json_db.sh - OpenSSL Compile Database Generator
+################################################################################
+#
+# @purpose: Generate compile_commands.json for OpenSSL static analysis
+#   - Build OpenSSL with bear to capture compilation database
+#   - Support both Intel (x86_64) and Apple Silicon (arm64) macOS
+#   - Enable clangd LSP and clang-tidy static analysis
+#   - Provide clean, configured build environment
+#   - Generate database for Tech Debt Observatory analysis
+#
+# @workflow: 6-phase build process
+#   Phase 1: Configuration and Validation
+#     └─> Detect platform (macOS Intel or Apple Silicon)
+#     └─> Verify OpenSSL repository exists
+#     └─> Determine CPU cores for parallel build
+#
+#   Phase 2: Platform Detection
+#     └─> Identify macOS architecture (x86_64 or arm64)
+#     └─> Select appropriate Configure target
+#     └─> Validate platform support
+#
+#   Phase 3: Build Cleanup
+#     └─> Remove previous build artifacts
+#     └─> Delete old compile_commands.json
+#     └─> Prepare clean build environment
+#
+#   Phase 4: OpenSSL Configuration
+#     └─> Run Configure with platform target
+#     └─> Use no-shared for static build
+#     └─> Set up build environment
+#
+#   Phase 5: Compilation with Bear
+#     └─> Build OpenSSL with bear wrapper
+#     └─> Generate compile_commands.json
+#     └─> Use parallel make with all CPU cores
+#
+#   Phase 6: Verification
+#     └─> Validate compile_commands.json exists
+#     └─> Display sample entries
+#     └─> Show completion status
+#
+# @dependencies: macOS build environment
+#   System requirements:
+#     - macOS (Darwin) - Intel or Apple Silicon
+#     - Bash 4.0+ for error handling
+#     - Xcode Command Line Tools installed
+#     - bear (Build EAR) for compile command capture
+#
+#   Tools required:
+#     - bear: brew install bear
+#     - make: System default (from Xcode CLT)
+#     - sysctl: System default for CPU detection
+#
+#   File structure:
+#     - $OPENSSL_DIR must exist with OpenSSL source
+#     - $OPENSSL_DIR/Configure must be executable
+#     - Write permissions in $OPENSSL_DIR
+#
+#   Prerequisites:
+#     - OpenSSL repository cloned
+#     - bear installed via Homebrew
+#     - Sufficient disk space (~500MB for build)
+#
+# @gotchas: Platform and tool considerations
+#   macOS Only:
+#     - Script only supports macOS (Darwin)
+#     - Linux/Windows not supported
+#     - Uses macOS-specific Configure targets
+#     - Requires Xcode Command Line Tools
+#
+#   Bear Installation:
+#     - Must install via Homebrew: brew install bear
+#     - Bear v3.0+ required for modern macOS
+#     - Older versions may have compatibility issues
+#     - Bear must be in PATH
+#
+#   Build Time:
+#     - Full build takes 3-10 minutes depending on hardware
+#     - Apple Silicon (M1/M2) faster than Intel
+#     - Parallel build uses all CPU cores
+#     - Progress not shown during build (make silent)
+#
+#   Compile Commands Format:
+#     - JSON array with one entry per .c file
+#     - Contains: file, directory, command
+#     - Large file (~50-100MB for full OpenSSL)
+#     - Must be in OpenSSL root for clangd to find
+#
+#   Architecture Detection:
+#     - x86_64 → darwin64-x86_64-cc target
+#     - arm64 → darwin64-arm64-cc target
+#     - No cross-compilation support
+#     - Must match native architecture
+#
+#   Clean Build Requirement:
+#     - Always runs 'make clean' first
+#     - Removes previous compile_commands.json
+#     - Ensures fresh compilation database
+#     - Old build artifacts can cause issues
+#
+# USAGE:
+#   ./build_compile_commands_json_db.sh
+#   # No arguments - fully automated
+#   # Expected runtime: 3-10 minutes
+#   # Run from any directory (script changes to OPENSSL_DIR)
+#
+# OUTPUT:
+#   Compile database:
+#     - $OPENSSL_DIR/compile_commands.json
+#     - JSON format with compilation commands
+#     - Sample entries shown on console
+#     - Ready for clangd/clang-tidy
+#
+#   Build artifacts:
+#     - Compiled OpenSSL libraries
+#     - Object files (.o)
+#     - Generated headers
+#     - Build configuration
+#
+# RELATED SCRIPTS:
+#   - generate_tech_debt-report.sh - Uses compile_commands.json (run after)
+#   - analyze-comments.sh - Comment analysis (independent)
+#   - prepare-worst-cve.sh - CVE prioritization (independent)
+#
+# NOTES:
+#   - Originally generated by ChatGPT, enhanced with 4D documentation
+#   - Prerequisite for clang-tidy based analysis scripts
+#   - Re-run if OpenSSL source code changes
+#   - Database becomes stale if configuration changes
+#
+################################################################################
 
-set -e
-set -o pipefail
+set -e          # Exit on any error
+set -o pipefail # Catch errors in pipelines
 
-# -----------------------------
-# CONFIGURATION
-# -----------------------------
+# ============================================
+# PHASE 1: Configuration and Validation
+# @purpose: Set up environment and verify prerequisites
+# @why: Ensure all requirements met before build
+# @method: Detect CPU cores, verify directory
+# @output: Validated environment ready for build
+# @gotcha: OPENSSL_DIR is hardcoded - edit for different paths
+# ============================================
+
+# ===========================================
+# CONFIGURATION SECTION
+# @purpose: Define paths and build parameters
+# ===========================================
 
 # Absolute path to OpenSSL repo
+# WHY: Hardcoded path - consider environment variable for flexibility
 OPENSSL_DIR="/Users/basiladdington/Projects/tech-debt-showcase/local-repos/openssl"
 
 # Number of CPU cores for parallel build
+# WHY: sysctl hw.ncpu returns total cores (physical + virtual)
+# WHY: Use all cores for fastest build time
 CORES=$(sysctl -n hw.ncpu)
 
-# -----------------------------
-# START SCRIPT
-# -----------------------------
 echo "=================================================="
 echo "[INFO] OpenSSL Tech Debt Observatory - Build Script"
 echo "[INFO] OpenSSL repo: $OPENSSL_DIR"
 echo "[INFO] Using $CORES CPU cores for build"
 echo "=================================================="
 
-# -----------------------------
 # Verify OpenSSL directory exists
-# -----------------------------
+# WHY: Fail fast with clear error if repo not found
 if [[ ! -d "$OPENSSL_DIR" ]]; then
     echo "[ERROR] OpenSSL directory not found: $OPENSSL_DIR"
+    echo ""
+    echo "Please update OPENSSL_DIR variable or clone OpenSSL:"
+    echo "  git clone https://github.com/openssl/openssl.git $OPENSSL_DIR"
+    echo ""
     exit 1
 fi
 
-# -----------------------------
-# Detect platform
-# -----------------------------
+# ============================================
+# PHASE 2: Platform Detection
+# @purpose: Identify macOS architecture and select Configure target
+# @why: Different macOS architectures need different build targets
+# @method: Use uname to detect OS and architecture
+# @output: Selected Configure target for platform
+# @gotcha: Only supports macOS - Linux/Windows not supported
+# ============================================
+
+# Detect platform architecture
+# WHY: uname -m returns x86_64 (Intel) or arm64 (Apple Silicon)
 ARCH=$(uname -m)
+
+# Detect operating system
+# WHY: uname returns 'Darwin' for macOS
 OS=$(uname)
+
 echo "[INFO] Detected platform: $OS $ARCH"
 
+# Verify macOS
+# WHY: OpenSSL Configure targets are macOS-specific
+# WHY: Linux/Windows have different build processes
 if [[ "$OS" != "Darwin" ]]; then
     echo "[ERROR] Unsupported OS: $OS"
+    echo ""
+    echo "This script only supports macOS (Darwin)."
+    echo "For Linux, use standard ./config && make process."
+    echo ""
     exit 1
 fi
 
-# Determine correct Configure target
+# Determine Configure target based on architecture
+# WHY: OpenSSL requires different targets for Intel vs Apple Silicon
+# WHY: darwin64-x86_64-cc for Intel, darwin64-arm64-cc for ARM
 if [[ "$ARCH" == "x86_64" ]]; then
     TARGET="darwin64-x86_64-cc"
 elif [[ "$ARCH" == "arm64" ]]; then
     TARGET="darwin64-arm64-cc"
 else
     echo "[ERROR] Unsupported architecture: $ARCH"
+    echo ""
+    echo "Only x86_64 (Intel) and arm64 (Apple Silicon) are supported."
+    echo ""
     exit 1
 fi
+
 echo "[INFO] Configure target: $TARGET"
 
-# -----------------------------
+# ============================================
+# PHASE 3: Build Cleanup
+# @purpose: Remove previous build artifacts
+# @why: Ensure clean build and fresh compile_commands.json
+# @method: Run make clean and delete old database
+# @output: Clean build environment
+# @gotcha: make clean may fail if never built - || true handles this
+# ============================================
+
 # Move into OpenSSL directory
-# -----------------------------
+# WHY: Configure and make must run from OpenSSL root
 cd "$OPENSSL_DIR"
 echo "[INFO] Entered OpenSSL directory: $(pwd)"
 
-# -----------------------------
-# Clean previous build
-# -----------------------------
+# Clean previous build artifacts
+# WHY: Old object files and libraries can cause build issues
+# WHY: || true prevents error if make clean fails (never built before)
 echo "[INFO] Cleaning previous build artifacts..."
 make clean || true
+
+# Remove old compile_commands.json
+# WHY: Bear generates new file, but we want to ensure it's fresh
+# WHY: Old database may have stale entries
 rm -f compile_commands.json
 
-# -----------------------------
-# Configure OpenSSL
-# -----------------------------
+# ============================================
+# PHASE 4: OpenSSL Configuration
+# @purpose: Configure OpenSSL build for platform
+# @why: Set up Makefiles and build parameters
+# @method: Run Configure with platform target
+# @output: Configured build environment
+# @gotcha: no-shared disables dynamic libraries
+# ============================================
+
+# Run OpenSSL Configure
+# WHY: Configure generates Makefiles for platform
+# WHY: $TARGET selects appropriate compiler and flags
+# WHY: no-shared builds static libraries only (faster, simpler)
+# WHY: Quotes around $TARGET prevent word splitting (SC2086 fix)
 echo "[INFO] Running Configure..."
-./Configure $TARGET no-shared || { echo "[ERROR] Configure failed"; exit 1; }
+./Configure "$TARGET" no-shared || {
+    echo "[ERROR] Configure failed"
+    echo ""
+    echo "Possible causes:"
+    echo "  - Xcode Command Line Tools not installed"
+    echo "  - Corrupted OpenSSL source"
+    echo "  - Unsupported OpenSSL version"
+    echo ""
+    echo "Try reinstalling Command Line Tools:"
+    echo "  xcode-select --install"
+    echo ""
+    exit 1
+}
 
-# -----------------------------
-# Build with bear
-# -----------------------------
+# ============================================
+# PHASE 5: Compilation with Bear
+# @purpose: Build OpenSSL and capture compile commands
+# @why: Bear generates compile_commands.json for clangd
+# @method: Wrap make with bear command
+# @output: Built OpenSSL + compile_commands.json
+# @gotcha: Takes 3-10 minutes depending on CPU
+# ============================================
+
+# Build with bear to capture compilation database
+# WHY: bear intercepts compiler invocations and records them
+# WHY: -- separates bear options from make command
+# WHY: -j"$CORES" enables parallel compilation (all cores)
+# WHY: Quotes around $CORES prevent issues with multi-digit numbers
 echo "[INFO] Building OpenSSL with bear to generate compile_commands.json..."
-bear -- make -j"$CORES" || { echo "[ERROR] Build failed"; exit 1; }
+echo "[INFO] This may take 3-10 minutes depending on your CPU..."
 
-# -----------------------------
-# Verify compile_commands.json
-# -----------------------------
+bear -- make -j"$CORES" || {
+    echo "[ERROR] Build failed"
+    echo ""
+    echo "Possible causes:"
+    echo "  - bear not installed: brew install bear"
+    echo "  - Compiler errors in OpenSSL source"
+    echo "  - Insufficient disk space"
+    echo "  - Configure step failed silently"
+    echo ""
+    echo "Check build output above for specific errors."
+    echo ""
+    exit 1
+}
+
+# ============================================
+# PHASE 6: Verification and Completion
+# @purpose: Validate compile_commands.json was created
+# @why: Confirm successful build and database generation
+# @method: Check file existence and show sample
+# @output: Validation status and sample entries
+# @gotcha: Large file (50-100MB) - only show first 15 lines
+# ============================================
+
+# Verify compile_commands.json exists
+# WHY: Bear should create this file during build
+# WHY: Absence indicates bear or build failure
 if [[ -f compile_commands.json ]]; then
     echo "[INFO] Success! compile_commands.json created in OpenSSL root."
+    echo ""
+    
+    # Show file size for user awareness
+    # WHY: Large files may surprise users
+    FILE_SIZE=$(du -h compile_commands.json | cut -f1)
+    echo "[INFO] File size: $FILE_SIZE"
+    echo ""
+    
+    # Display sample entries
+    # WHY: Verify format looks correct
+    # WHY: First 15 lines show structure without overwhelming output
     echo "[INFO] Sample entries:"
     head -n 15 compile_commands.json
 else
     echo "[ERROR] compile_commands.json not found!"
+    echo ""
+    echo "This usually means bear failed to capture compilation commands."
+    echo ""
+    echo "Troubleshooting:"
+    echo "  1. Verify bear is installed: which bear"
+    echo "  2. Check bear version: bear --version (need 3.0+)"
+    echo "  3. Try reinstalling bear: brew reinstall bear"
+    echo "  4. Check build completed successfully (see output above)"
+    echo ""
     exit 1
 fi
 
+# Final completion message
+echo ""
 echo "=================================================="
 echo "[INFO] OpenSSL Tech Debt Observatory setup complete."
-echo "[INFO] You can now open VSCode/VSCodium and clangd will use compile_commands.json"
+echo ""
+echo "Next steps:"
+echo "  1. Open VSCode/VSCodium in OpenSSL directory:"
+echo "     code $OPENSSL_DIR"
+echo ""
+echo "  2. clangd will automatically use compile_commands.json"
+echo "     for IntelliSense and code navigation"
+echo ""
+echo "  3. Run static analysis with clang-tidy:"
+echo "     ../tools/generate_tech_debt-report.sh"
+echo ""
+echo "  4. Re-run this script if OpenSSL source changes"
+echo ""
 echo "=================================================="
