@@ -41,16 +41,23 @@ echo "[PHASE 1] Extracting commit metadata..."
 git log -1 --format=full "$PATCH_COMMIT" > "$OUTPUT_DIR/analysis/metadata/patch_commit_details.txt"
 
 # Get commit date and author
+COMMIT_DATE=""
 COMMIT_DATE=$(git log -1 --format=%cd --date=iso "$PATCH_COMMIT")
+
+COMMIT_AUTHOR=""
 COMMIT_AUTHOR=$(git log -1 --format="%an <%ae>" "$PATCH_COMMIT")
+
+COMMIT_MESSAGE=""
 COMMIT_MESSAGE=$(git log -1 --format=%B "$PATCH_COMMIT")
 
-echo "Patch Commit: $PATCH_COMMIT" > "$OUTPUT_DIR/analysis/metadata/timeline.txt"
-echo "Author: $COMMIT_AUTHOR" >> "$OUTPUT_DIR/analysis/metadata/timeline.txt"
-echo "Date: $COMMIT_DATE" >> "$OUTPUT_DIR/analysis/metadata/timeline.txt"
-echo "" >> "$OUTPUT_DIR/analysis/metadata/timeline.txt"
-echo "Commit Message:" >> "$OUTPUT_DIR/analysis/metadata/timeline.txt"
-echo "$COMMIT_MESSAGE" >> "$OUTPUT_DIR/analysis/metadata/timeline.txt"
+{
+    echo "Patch Commit: $PATCH_COMMIT"
+    echo "Author: $COMMIT_AUTHOR"
+    echo "Date: $COMMIT_DATE"
+    echo ""
+    echo "Commit Message:"
+    echo "$COMMIT_MESSAGE"
+} > "$OUTPUT_DIR/analysis/metadata/timeline.txt"
 
 echo "  ✓ Commit metadata saved"
 
@@ -60,6 +67,7 @@ echo "  ✓ Commit metadata saved"
 echo "[PHASE 2] Extracting vulnerable code (pre-patch)..."
 
 # Get parent commit (the vulnerable version)
+PARENT_COMMIT=""
 PARENT_COMMIT=$(git rev-parse "$PATCH_COMMIT^")
 echo "Parent (vulnerable) commit: $PARENT_COMMIT" >> "$OUTPUT_DIR/analysis/metadata/timeline.txt"
 
@@ -67,20 +75,29 @@ echo "Parent (vulnerable) commit: $PARENT_COMMIT" >> "$OUTPUT_DIR/analysis/metad
 git show "$PARENT_COMMIT:$TARGET_FILE" > "$OUTPUT_DIR/original/$BASENAME"
 
 # Get vulnerable version metadata
-echo "[Vulnerable Version]" > "$OUTPUT_DIR/original/metadata.txt"
-echo "Commit: $PARENT_COMMIT" >> "$OUTPUT_DIR/original/metadata.txt"
-git log -1 --format=full "$PARENT_COMMIT" >> "$OUTPUT_DIR/original/metadata.txt"
+{
+    echo "[Vulnerable Version]"
+    echo "Commit: $PARENT_COMMIT"
+    git log -1 --format=full "$PARENT_COMMIT"
+} > "$OUTPUT_DIR/original/metadata.txt"
 
 # Calculate comment coverage for vulnerable version
+TOTAL_LINES=""
 TOTAL_LINES=$(wc -l < "$OUTPUT_DIR/original/$BASENAME")
+
+COMMENT_LINES=""
 COMMENT_LINES=$(grep -cE '^\s*(//|/\*|\*)' "$OUTPUT_DIR/original/$BASENAME" || echo "0")
+
+COMMENT_RATIO=""
 COMMENT_RATIO=$(awk "BEGIN {printf \"%.2f\", ($COMMENT_LINES/$TOTAL_LINES)*100}")
 
-echo "" >> "$OUTPUT_DIR/original/metadata.txt"
-echo "Code Statistics:" >> "$OUTPUT_DIR/original/metadata.txt"
-echo "  Total lines: $TOTAL_LINES" >> "$OUTPUT_DIR/original/metadata.txt"
-echo "  Comment lines: $COMMENT_LINES" >> "$OUTPUT_DIR/original/metadata.txt"
-echo "  Comment coverage: $COMMENT_RATIO%" >> "$OUTPUT_DIR/original/metadata.txt"
+{
+    echo ""
+    echo "Code Statistics:"
+    echo "  Total lines: $TOTAL_LINES"
+    echo "  Comment lines: $COMMENT_LINES"
+    echo "  Comment coverage: $COMMENT_RATIO%"
+} >> "$OUTPUT_DIR/original/metadata.txt"
 
 echo "  ✓ Vulnerable version saved (lines: $TOTAL_LINES, comments: $COMMENT_RATIO%)"
 
@@ -112,10 +129,11 @@ echo "  ✓ Diff analysis complete"
 echo "[PHASE 4] Identifying vulnerability location..."
 
 # Search for DH_check related code in vulnerable version
-echo "[Vulnerability Locations in $BASENAME]" > "$OUTPUT_DIR/analysis/metadata/vulnerability_locations.txt"
-echo "" >> "$OUTPUT_DIR/analysis/metadata/vulnerability_locations.txt"
-
-grep -n "DH_check\|BN_num_bits\|OPENSSL_DH" "$OUTPUT_DIR/original/$BASENAME" >> "$OUTPUT_DIR/analysis/metadata/vulnerability_locations.txt" || echo "No vulnerability markers found"
+{
+    echo "[Vulnerability Locations in $BASENAME]"
+    echo ""
+    grep -n "DH_check\|BN_num_bits\|OPENSSL_DH" "$OUTPUT_DIR/original/$BASENAME" || echo "No vulnerability markers found"
+} > "$OUTPUT_DIR/analysis/metadata/vulnerability_locations.txt"
 
 echo "  ✓ Vulnerability locations identified"
 

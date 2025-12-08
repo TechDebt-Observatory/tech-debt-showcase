@@ -2,8 +2,8 @@
 ## Tech Debt Observatory Project
 
 **Version:** 1.0  
-**Date:** 2024-11-29  
-**Author:** Baz  
+**Date:** 2025-11-29  
+**Author:** Basil Addington  
 **Purpose:** Lightweight documentation framework for shell scripts in the Tech Debt Observatory project
 
 ---
