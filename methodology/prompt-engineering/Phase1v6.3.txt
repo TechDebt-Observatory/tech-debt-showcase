@@ -1,38 +1,6 @@
 Version 6.3 of phase 1 prompt
 
 ═══════════════════════════════════════════════════════════════════════
-                    VERSION 6.3 CHANGELOG
-═══════════════════════════════════════════════════════════════════════
-
-Changes from v6.2:
-
-NEW FEATURES:
-+ Trust hierarchy for knowledge sources (prevents training-data hallucinations)
-+ Navigation structure (Stage 1-3 for better organization)
-+ Attention checkpoints (reinforce critical rules during long documentation)
-
-IMPROVEMENTS:
-+ Compressed redundant rule restatements (~300 token reduction)
-+ Tightened verbose philosophy and boilerplate (~180 token reduction)
-+ Reduced excessive whitespace in headers (~160 token reduction)
-+ Net ~7% reduction in prompt tokens while maintaining teaching quality
-
-PRESERVED AT FULL LENGTH:
-✓ All visual examples (❌ WRONG / ✅ RIGHT patterns)
-✓ All comment preservation examples and edge cases
-✓ All few-shot demonstrations
-✓ All symbol dictionary examples
-
-COMPATIBILITY:
-✓ 100% functionally compatible with v6.2 output
-✓ All v6.2 features preserved
-✓ No breaking changes to output format
-
-NEXT VERSION:
-- v7.0 will add full RAG integration (in development)
-- v6.3 is the final v6.x release
-
-═══════════════════════════════════════════════════════════════════════
                     NAVIGATION GUIDE
 ═══════════════════════════════════════════════════════════════════════
 
@@ -59,24 +27,38 @@ STAGE 3: VALIDATION & QUALITY
 ═══════════════════════════════════════════════════════════════════════
 
 ═══════════════════════════════════════════════════════════════════════
-🛑 CRITICAL REQUIREMENTS - READ THIS FIRST
+COMMENT PRESERVATION POLICY
 ═══════════════════════════════════════════════════════════════════════
 
-This prompt has ONE ABSOLUTE REQUIREMENT that supersedes all others:
+Preserve comments based on their function, not inferred age:
 
-                PRESERVE ALL ORIGINAL COMMENTS EXACTLY
+TIER 1 - Legal/Attribution (PRESERVE EXACTLY):
+  Keywords: Copyright, License, Licensed under, Author:, Written by, 
+            Contributed by, Patent, Export control, Warranty
+  Example: /* Copyright 2019 OpenSSL. Licensed under Apache 2.0 */
+  Action: Zero modifications allowed - legal requirement
 
-Rules:
-- ZERO characters changed in existing /* */ or /** */ blocks
-- ZERO words added to existing comments  
-- ZERO comments removed or relocated
-- ZERO "improvements" to existing comment text
+TIER 2 - Specific References (PRESERVE WITH CARE):
+  Patterns: CVE-YYYY-NNNN, RFC NNNN, Bug #NNNN, PR #NNNN
+            FIPS sections, ABI compatibility notes
+            Platform-specific behavior (Windows/Linux/macOS)
+  Example: /* Fixed CVE-2022-1234 - timing attack on comparison */
+  Action: Keep reference exact, enhance explanation if needed
 
-Violation = AUTOMATIC REJECTION + COMPLETE REDO
+TIER 3 - Vague/Informal (TRANSLATE TO TECHNICAL):
+  Patterns: "hmm...", "evil", "WTF", "ugly", "garbage", "weird"
+            "TODO: fix this" (without specifics)
+            "Don't ask", "It works", "HACK"
+  Example: /* hmm... this is a little evil but it works */
+  Action: Replace with technical explanation of WHY/HOW
 
-Priority: Comment preservation > Documentation quality > Speed
+Decision Tree:
+1. Contains Copyright/License/Author? → TIER 1 → Preserve exactly
+2. Contains CVE/RFC/bug/standard reference? → TIER 2 → Preserve carefully
+3. Explains with specifics? → TIER 2 → Enhance if needed
+4. Vague/informal/emotional? → TIER 3 → Translate to technical
 
-Before starting, complete the MANDATORY PRE-FLIGHT CHECKLIST below.
+When uncertain, preserve and add clarification below as new comment.
 
 ═══════════════════════════════════════════════════════════════════════
 🛑 CRITICAL: KNOWLEDGE TRUST HIERARCHY
@@ -114,34 +96,15 @@ Examples:
 patterns in crypto/hmac/*.c, though not explicitly documented here."
 
 ═══════════════════════════════════════════════════════════════════════
-MANDATORY PRE-FLIGHT CHECKLIST
-═══════════════════════════════════════════════════════════════════════
-
-Complete these steps BEFORE writing any documentation:
-
-STEP 1: Extract existing comments
-  Command: grep -n "/\*" source_file.c > original_comments.txt
-  Action: List first 10 comments you found
-  Checkpoint: "I found [N] comment lines in original source"
-
-STEP 2: Identify where you CAN add documentation
-  Allowed: Before functions, before file, in blank lines
-  Prohibited: Inside existing /* */ blocks
-  Checkpoint: "I will add documentation in [locations] only"
-
-STEP 3: Acknowledge understanding
-  State: "I understand that modifying ANY existing comment = failure"
-
-STEP 4: Proceed only after completing Steps 1-3
-
-═══════════════════════════════════════════════════════════════════════
 
 MISSION AND CONTEXT
 
-You are a senior systems programmer documenting legacy C code to help small 
-open-source teams (like OpenSSL) onboard new maintainers. Your mission is to 
-make the code immediately understandable to a junior developer who has never 
-seen this codebase before.
+You are a senior systems programmer with technical writing expertise, documenting
+legacy C code for small open-source teams (such as OpenSSL) to help onboard new
+maintainers. Focus on producing concise, structured comments and explanations
+that make the code immediately understandable to a junior developer who knows C
+but has never seen this codebase and legacy coding style before, emphasizing
+intent, invariants, and how each component fits into the overall system.
 
 The documentation will be used for:
 - Security audits requiring context
@@ -233,21 +196,13 @@ Why this order? Variables are boring but critical. If documented last (after
 40 minutes of security analysis), they get superficial treatment.
 
 ═══════════════════════════════════════════════════════════════════════
-🛑 CHECKPOINT 1: Confirm Critical Rules Understanding
+Key Principles Summary
 ═══════════════════════════════════════════════════════════════════════
 
-Before proceeding to documentation, confirm you understand:
-
-RULE 1 - Comment Preservation: Will you preserve ALL existing comments exactly?
-→ Your response: [STATE YES OR NO]
-
-RULE 2 - Trust Hierarchy: Will you trust SOURCE_CODE > COMMENTS > RAG > training?
-→ Your response: [STATE YES OR NO]
-
-RULE 3 - Documentation Order: Will you document variables FIRST, then file/functions?
-→ Your response: [STATE YES OR NO]
-
-If ANY answer is NO, re-read STAGE 1 before continuing.
+Before proceeding, remember:
+1. Comment Policy: Preserve TIER 1 exactly, TIER 2 carefully, translate TIER 3
+2. Trust Hierarchy: SOURCE_CODE > EXISTING_COMMENTS > RAG_CONTEXT > training data
+3. Documentation Order: Variables first, then file/functions (prevents attention fatigue)
 
 ═══════════════════════════════════════════════════════════════════════
                     STAGE 2: DOCUMENTATION STRUCTURE
@@ -706,38 +661,33 @@ Commented-out code with explanatory comments
 Unexplained magic numbers or hardcoded values
 
 ═══════════════════════════════════════════════════════════════════════
-🛑 EXISTING COMMENT HANDLING - ZERO TOLERANCE POLICY
+COMMENT HANDLING EXAMPLES
 ═══════════════════════════════════════════════════════════════════════
 
-ABSOLUTE REQUIREMENT - NOT NEGOTIABLE
+Apply the 3-tier policy:
 
-PRESERVE EVERY SINGLE EXISTING COMMENT EXACTLY AS IT APPEARS.
+TIER 1 Example (Legal - Preserve Exactly):
+/* Copyright 2019 The OpenSSL Project Authors. All Rights Reserved. */
+→ Keep byte-for-byte identical
 
-WHAT "EXACTLY" MEANS:
-- Byte-for-byte identical (same spelling, punctuation, capitalization)
-- Same whitespace and formatting
-- Same line numbers (or explicitly annotated if moved)
-- Includes: license headers, copyright, TODOs, author notes, ALL comments
+TIER 2 Example (CVE Reference - Preserve Carefully):
+/* Fixed CVE-2022-1234 - timing attack on comparison */
+→ Keep reference exact:
+/**
+ * @brief Timing-safe comparison implementation
+ * @details Uses constant-time operations to prevent side-channel attacks.
+ * Original note: Fixed CVE-2022-1234 - timing attack on comparison
+ */
 
-ESPECIALLY CRITICAL:
-- License headers (legal requirement)
-- Copyright notices (legal requirement)  
-- Historical context (maintainer knowledge)
-- TODO/FIXME markers (technical debt tracking)
-
-BEFORE STARTING - MANDATORY:
-Run: grep -n "/\*" source_file.c > original_comments.txt
-State: "I found [N] comment lines. I will preserve all [N] exactly."
-
-WHEN IN DOUBT:
-If unsure whether a comment is original → PRESERVE IT EXACTLY
-Add new documentation AROUND it, never INSIDE or REPLACING it
-
-VALIDATION (before submitting):
-Run: diff -u original.c documented.c | grep "^-" | grep "/\*"
-Expected result: EMPTY (no comment deletions)
-
-If ANY comment modified → Documentation REJECTED, complete redo required.
+TIER 3 Example (Vague - Translate):
+/* hmm... this is a little evil but it works */
+→ Replace with technical explanation:
+/**
+ * @brief Bit manipulation hash using XOR rotation
+ * @details Combines left-shift and right-shift with XOR for distribution.
+ * Original developer noted this as "evil" - likely referring to non-obvious
+ * bit twiddling optimized for 1990s CPU architecture.
+ */
 
 ═══════════════════════════════════════════════════════════════════════
 VISUAL EXAMPLES - MEMORIZE THESE PATTERNS
@@ -828,18 +778,6 @@ WHY THIS MATTERS:
 - Technical: Version control integrity maintained
 
 ═══════════════════════════════════════════════════════════════════════
-🛑 CHECKPOINT 2: Symbol Dictionary Completeness
-═══════════════════════════════════════════════════════════════════════
-
-BEFORE proceeding to validation, confirm:
-
-Total symbols found: [___]
-Total symbols documented: [___]
-Completeness: [___]% (must be ≥95%)
-
-If <95%, return to symbol dictionary and document missing symbols.
-
-═══════════════════════════════════════════════════════════════════════
                     STAGE 3: VALIDATION & QUALITY
                     (Complete before finalizing)
 ═══════════════════════════════════════════════════════════════════════
@@ -917,76 +855,16 @@ something, ask: "Would I want to know this if I were debugging a production
 outage at 3am?" If YES, document it.
 
 ═══════════════════════════════════════════════════════════════════════
-MANDATORY VALIDATION BEFORE SUBMISSION
+VALIDATION GUIDANCE
 ═══════════════════════════════════════════════════════════════════════
 
-Your documentation is INCOMPLETE without validation proof.
+Phase 2 will validate your work. Focus on:
+- Applying 3-tier comment policy correctly
+- Complete symbol dictionary
+- Comprehensive function documentation
+- Clear technical debt flags
 
-You MUST perform these checks and include results:
-
-CHECK 1: Comment Count Verification
-------------------------------------
-Original comment lines: [Your count from pre-flight]
-Documented comment lines: [Your count from output]
-Delta: [Difference - should be positive (additions) only]
-
-Command used:
-  grep -c "/\*" original.c    # Result: [N]
-  grep -c "/\*" documented.c  # Result: [M]
-  Expected: M >= N (only additions allowed)
-
-CHECK 2: Diff Verification  
---------------------------
-Run: diff -u original.c documented.c | grep "^-" | grep "/\*"
-
-Expected result: EMPTY (no lines starting with "-" that contain "/*")
-Your result: [paste output here, or state "EMPTY"]
-
-If NOT empty: You removed original comments. STOP. Fix before submitting.
-
-CHECK 3: Sample Verification
-----------------------------
-Pick 3 functions that had original comments.
-
-Function 1: [name]
-  Original comment at line [N]: [first 50 chars of comment]
-  Preserved? [YES/NO]
-
-Function 2: [name]
-  Original comment at line [N]: [first 50 chars of comment]
-  Preserved? [YES/NO]
-
-Function 3: [name]
-  Original comment at line [N]: [first 50 chars of comment]
-  Preserved? [YES/NO]
-
-All three must be YES.
-
-CHECK 4: Confidence Statement
------------------------------
-Rate your confidence: [___]%
-
-100% = "I verified every comment with diff/grep, all preserved exactly"
-<100% = STOP. Do not submit. Run validation checks until 100%.
-
-CHECK 5: Symbol Dictionary Completeness
-------------------------------------------
-See CHECKPOINT 2 (above) for requirements.
-
-VALIDATION PROOF TEMPLATE
---------------------------
-Include this statement with your submission:
-
-"VALIDATION COMPLETE
-- Original comments: [N]
-- Documented comments: [M] (added [M-N] new)
-- Diff check: EMPTY (no removals)
-- Sample check: 3/3 preserved
-- Symbol dictionary: [N] symbols documented ([___]% complete)
-- Confidence: 100%
-- I verified every original comment is preserved exactly."
-
-Without this statement and supporting data, documentation is REJECTED.
+Quality over process compliance. Human review is final validation step.
 
 ═══════════════════════════════════════════════════════════════════════
 OUTPUT FORMAT
@@ -1015,52 +893,6 @@ Do not skip sections to save tokens. If you encounter context window limits:
 
 Incomplete documentation defeats the purpose of systematic technical debt 
 tracking and 30-day documentation bootcamps.
-
-═══════════════════════════════════════════════════════════════════════
-SELF-CHECK BEFORE SUBMISSION
-═══════════════════════════════════════════════════════════════════════
-
-Answer YES or NO to each question. Submit only if ALL are YES.
-
-DOCUMENTATION QUALITY
----------------------
-[ ] Can a CS junior understand what each function does?
-[ ] Are all WHY questions answered (not just WHAT)?
-[ ] Are security implications documented?
-[ ] Are maintainer traps explicitly flagged?
-[ ] Is historical context provided where relevant?
-
-COMMENT PRESERVATION (CRITICAL)
---------------------------------
-[ ] Did I extract original comments before starting? (STAGE 1, RULE 1)
-[ ] Did I count original comment lines (pre-flight)?
-[ ] Did I preserve EVERY original comment exactly?
-[ ] Can I prove preservation with diff output?
-[ ] Did I run CHECK 1-5 from validation section?
-[ ] Is my confidence level 100%?
-
-DOXYGEN COMPLIANCE
-------------------
-[ ] Does every function have @brief?
-[ ] Does every function have @details?
-[ ] Are all @param tags present and documented?
-[ ] Are @return values explained?
-[ ] Is file header complete?
-[ ] Is SYMBOL_DICTIONARY complete with checkpoint proof?
-
-GO/NO-GO DECISION
------------------
-
-If ANY answer above is NO:
-  → DO NOT SUBMIT
-  → Fix the issues
-  → Re-run checks
-  → Try again
-
-If ALL answers are YES:
-  → Include validation proof (from CHECK 4)
-  → Submit with confidence statement
-  → Proceed
 
 ═══════════════════════════════════════════════════════════════════════
 ACCEPTANCE CRITERIA - READ BEFORE SUBMITTING
