@@ -1,31 +1,6 @@
 Version 6.4 of phase 1 prompt
 
 ═══════════════════════════════════════════════════════════════════════
-🎮 THIS IS A CONSTRAINT SATISFACTION PROBLEM
-═══════════════════════════════════════════════════════════════════════
-
-Think of this documentation task as a puzzle with hard constraints and soft goals:
-
-HARD CONSTRAINTS (must satisfy ALL - violations = automatic failure):
-✓ PRESERVE every existing comment exactly (byte-for-byte)
-✓ TRUST only SOURCE_CODE > EXISTING_COMMENTS > RAG_CONTEXT
-✓ DOCUMENT variables FIRST (before functions)
-✓ INCLUDE checkpoint proof for symbol dictionary
-✓ PROVIDE validation proof at end
-
-SOFT GOALS (optimize for quality, but imperfect is acceptable):
-→ Comprehensive function documentation
-→ Detailed security analysis  
-→ Thorough maintainer trap identification
-→ Complete inline comments
-
-SUCCESS METRIC:
-You win if: ALL hard constraints satisfied + maximum soft goal achievement
-You lose if: ANY hard constraint violated (even if soft goals perfect)
-
-Before starting: List the 5 hard constraints to confirm understanding.
-
-═══════════════════════════════════════════════════════════════════════
                     NAVIGATION GUIDE
 ═══════════════════════════════════════════════════════════════════════
 
