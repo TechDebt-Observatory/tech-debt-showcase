@@ -119,6 +119,35 @@ When uncertain:
 Principle: Under-claim rather than over-claim. "Unclear" better than confidently wrong.
 
 ═══════════════════════════════════════════════════════════════════════
+TOKEN ESTIMATION GUIDANCE
+═══════════════════════════════════════════════════════════════════════
+
+To self-regulate output within pass limits, use these estimates:
+
+TYPICAL TOKEN COUNTS:
+- Symbol dictionary entry: ~150 tokens
+  Example: "- RSA_size(): Function - Returns key size in bytes (1 line = ~150 tokens)"
+
+- Function header (full): ~400 tokens
+  Example: Complete @brief/@param/@return/@details block
+
+- Inline comment: ~50 tokens
+  Example: "/* This loop iterates through cipher list */"
+
+- File header: ~500 tokens
+  Example: Complete @file/@brief/@details/@section blocks
+
+RUNNING COUNT EXAMPLES:
+- 10 symbol entries × 150 = 1,500 tokens
+- 50 symbol entries × 150 = 7,500 tokens
+- 133 symbol entries × 150 = ~20,000 tokens (Pass 1 limit reached)
+- 75 functions × 400 = 30,000 tokens (Pass 2 limit)
+
+SELF-CHECK: After each major section, estimate:
+"I have documented [N] symbols × 150 = ~[X] tokens so far"
+
+
+═══════════════════════════════════════════════════════════════════════
 
 MISSION AND CONTEXT
 
@@ -515,11 +544,17 @@ BEFORE proceeding to write file headers or function documentation, you MUST:
 
 /**
  * @note CHECKPOINT PROOF - SYMBOL_DICTIONARY COMPLETENESS
- * Symbols scanned: [TOTAL from step 2]
- * Dictionary entries created: [count of bullets in your dictionary]
- * Completeness: [scanned] = [documented] ? YES/NO
  * 
- * Breakdown:
+ * PASS NUMBER: [1, 1b, 2, 3, etc.]
+ * OUTPUT TOKENS (estimated): [___] tokens this pass
+ * CUMULATIVE TOKENS: [___] tokens across all passes
+ * 
+ * SYMBOL COUNT:
+ * - Symbols scanned: [TOTAL from step 2]
+ * - Dictionary entries created: [count of bullets in your dictionary]
+ * - Completeness: [scanned] = [documented] ? YES/NO
+ * 
+ * BREAKDOWN:
  * - Constants/macros: [___] scanned, [___] documented
  * - Error codes: [___] scanned, [___] documented
  * - Special values: [___] scanned, [___] documented
@@ -528,16 +563,23 @@ BEFORE proceeding to write file headers or function documentation, you MUST:
  * - Function params: [___] scanned, [___] documented
  * - Local variables: [___] scanned, [___] documented
  * 
- * Status: COMPLETE - Proceeding to file header documentation
+ * FUNCTION COUNT (if applicable this pass):
+ * - Functions documented: [___]/[total]
+ * 
+ * STATUS: COMPLETE | INCOMPLETE
+ * RESUME AT: [location if incomplete, e.g., "Function speed_main()"]
+ * NEXT PASS NEEDED: YES/NO
  */
 
 DO NOT PROCEED TO FILE HEADER until:
-- Completeness = YES
-- All categories documented
+- Completeness = YES (for current pass scope)
+- All planned categories documented
 - Checkpoint proof inserted in output
+- Token estimate provided
 
 This checkpoint prevents \"attention fatigue\" where interesting security 
 analysis gets priority over boring-but-critical symbol documentation.
+-------------------------------------------------------
 -------------------------------------------------------
 
 @section USAGE_EXAMPLE
@@ -892,36 +934,58 @@ Just provide:
 - Properly formatted Doxygen comments
 - All original code and comments preserved exactly
 
-═══════════════════════════════════════════════════════════════════════
-📦 STRATEGY FOR LARGE FILES (>100 functions or >5000 lines)
-═══════════════════════════════════════════════════════════════════════
+📦 STRATEGY FOR LARGE FILES (>100 functions OR >3000 lines)
 
-If file exceeds manageable size:
+If file exceeds manageable size, use TOKEN-BOUNDED MULTI-PASS STRATEGY:
 
-PASS 1: Foundation
+**PASS 1: Foundation (Target: 25,000 output tokens max)**
 - Complete pre-flight checklist
-- Document SYMBOL_DICTIONARY (all symbols)
-- Write FILE HEADER
+- Write FILE HEADER (~500 tokens)
+- Document SYMBOL_DICTIONARY by category:
+  * **Stop when reaching 20,000 output tokens** OR when category complete
+  * Priority order:
+    1. Constants/macros (highest priority)
+    2. Error codes/flags
+    3. Global variables
+    4. Structure fields (most critical 5 structs only)
+  * If incomplete: Output "/* PASS_1_INCOMPLETE: [category] continues in Pass 1b */"
 - Add checkpoint proof
 
-Output: \"[filename]_pass1.c\" with foundation complete
+Output: "[filename]_pass1.c" with **explicit continuation marker** if needed
 
-PASS 2: Functions (first half)
-- Document functions 1 to N/2
+**PASS 1B: Symbol Dictionary Continuation (if needed)**
+- Continue from last category
+- Target: 25,000 output tokens max
+- Update checkpoint proof: "Pass 1b: [N]/[total] symbols documented"
+
+**PASS 2: Functions (Target: 30,000 output tokens max)**
+- Document functions 1 to N (stop at token limit)
 - Full quality: @brief, @param, @return, @details
-- Add note: \"PARTIAL: Functions 1-[N/2] documented\"
+- Track progress: "/* PASS_2_STATUS: Functions 1-[N] documented */"
+- If stopping mid-file: "/* CONTINUES_IN_PASS_3: Function [N+1] */"
 
-Output: \"[filename]_pass2.c\"
+Output: "[filename]_pass2.c"
 
-PASS 3: Functions (second half)
-- Document functions N/2+1 to N
-- Merge with pass 2 output
-- Complete validation checklist
+**PASS 3+: Function Continuation**
+- Continue from last function
+- Same 30,000 token budget
+- Repeat until complete
+- Merge all passes
 
-Output: \"[filename]_complete.c\"
+Output: "[filename]_complete.c"
 
-Key principle: Each pass must be COMPLETE at high quality.
-Never rush through all functions at low quality.
+**EXPLICIT STOPPING RULES:**
+1. Token counter: Estimate ~4-5 tokens per line output
+2. Stop signals:
+   - "I have generated ~[N] tokens, stopping per Pass [X] limit"
+   - "/* CONTINUATION_REQUIRED: Resume at [location] */"
+3. Quality principle: **NEVER sacrifice quality to fit more content**
+
+**SELF-REGULATION PROTOCOL:**
+Before generating each section, ask:
+- "Have I output ~25K tokens this pass?"
+- "Is this section splittable or atomic?"
+- If atomic and would exceed limit → defer to next pass
 
 ═══════════════════════════════════════════════════════════════════════
 
