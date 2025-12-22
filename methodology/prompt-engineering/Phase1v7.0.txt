@@ -152,21 +152,21 @@ Across the file header, function headers, inline comments, and SYMBOL_DICTIONARY
 your documentation MUST explicitly cover these seven dimensions for each significant 
 unit (file and functions):
 
-1. D1: Syntax — WHAT the code accepts and returns. Parameters, return values, error codes, pre/postconditions.
-2. D2: Structure — HOW the code works internally. Algorithms, data flow, loop invariants, complexity.
-3. D3: Intent — WHY this code exists. Design rationale, alternatives considered, assumptions, trade-offs.
-4. D4: History — WHEN and WHY it evolved. CVEs, refactors, deprecations, lessons learned.
-5. D5: Relationships — WHERE it fits in the system. Dependencies, integration points, impact radius.
-6. D6: Quality & Telemetry — WHAT'S WRONG and how to observe it. Technical debt, known issues, logging points, metrics hooks.
-7. D7: Verification — PROOF it works. V&V level, symbol dictionary validation, attestation checkpoint.
+1. GER-D1: Syntax — WHAT the code accepts and returns. Parameters, return values, error codes, pre/postconditions.
+2. GER-D2: Relationships – WHERE it fits in the system. Dependencies, integration points, impact radius, data flow.
+3. GER-D3: Structure – HOW the code works internally. Algorithms, control flow, loop invariants, complexity.
+4. GER-D4: Intent – WHY this code exists. Design rationale, alternatives considered, assumptions, trade-offs.
+5. GER-D5: History – WHEN and WHY it evolved. CVEs, refactors, deprecations, lessons learned.
+6. GER-D6: Quality & Telemetry — WHAT'S WRONG and how to observe it. Technical debt, known issues, logging points, metrics hooks.
+7. GER-D7: Verification — PROOF it works. V&V level, symbol dictionary validation, attestation checkpoint.
 
 MAP THESE DIMENSIONS AS FOLLOWS:
-- File header: D3 (Intent), D5 (Relationships), D4 (History), and D7 (V&V level declaration).
-- Function headers: D1 (Syntax), D2 (Structure), D3 (Intent), D6 (known issues/telemetry).
-- Inline comments: D2 (flow explanations), D6 (debt markers), D4 (historical quirks).
-- SYMBOL_DICTIONARY: D1 (types/ranges), D7 (certified Ground Zero definitions).
-- Technical Debt section: D6 (complete assessment with Economist review for HIGH/MEDIUM items).
-- Verification Checkpoint: D7 (attestation block with Builder/Auditor/Economist sign-off).
+- SYMBOL_DICTIONARY: GER-D1 (types/ranges), GER-D7 (certified Ground Zero definitions).
+- File header: GER-D2 (Relationships), GER-D4 (Intent), GER-D5 (History), and GER-D7 (V&V level declaration).
+- Function headers: GER-D1 (Syntax), GER-D3 (Structure), GER-D4 (Intent), GER-D6 (known issues/telemetry).
+- Inline comments: GER-D3 (flow explanations), GER-D6 (debt markers), GER-D5 (historical quirks).
+- Technical Debt section: GER-D6 (complete assessment with Economist review for HIGH/MEDIUM items).
+- Verification Checkpoint: GER-D7 (attestation block with Builder/Auditor/Economist sign-off).
 
 ═══════════════════════════════════════════════════════════════════════
 THREE-PERSONA ATTESTATION MODEL (V&V Level 3+)
@@ -176,18 +176,18 @@ For Level 3+ compliance, documentation requires attestation from three perspecti
 
 | Persona    | Attests To          | Dimensions | Statement                              |
 |------------|---------------------|------------|----------------------------------------|
-| Builder    | Code works as documented | D1, D2, D5 | "Syntax, structure, relationships accurate" |
-| Auditor    | Code is traceable   | D3, D4, D7 | "Intent, history, compliance verified" |
-| Economist  | Debt accurately assessed | D6     | "Technical debt prioritized correctly" |
+| Builder    | Code works as documented | GER-D1, GER-D2, GER-D5 | "Syntax, structure, relationships accurate" |
+| Auditor    | Code is traceable   | GER-D3, GER-D4, GER-D7 | "Intent, history, compliance verified" |
+| Economist  | Debt accurately assessed | GER-D6     | "Technical debt prioritized correctly" |
 
 For under-resourced teams, one person may wear all three hats but MUST review 
 from each perspective separately. Include attestation block in D7 Verification section.
 
 V&V LEVEL SCALING:
-- Level 1 (Internal tools): D1-D5 only, no formal attestation
-- Level 2 (Production): D1-D6, Builder attestation
-- Level 3 (Security-sensitive): D1-D7, Builder + Auditor attestation  
-- Level 4 (Safety-critical): D1-D7, all three personas, GPG-signed
+- Level 1 (Internal tools): GER-D1 - GER-D5 only, no formal attestation
+- Level 2 (Production): GER-D1 - GER-D6, Builder attestation
+- Level 3 (Security-sensitive): GER-D1 - GER-D7, Builder + Auditor attestation  
+- Level 4 (Safety-critical): GER-D1 - GER-D7, all three personas, GPG-signed
 
 ═══════════════════════════════════════════════════════════════════════
 🛑 DOCUMENTATION ORDER - FOLLOW EXACTLY
@@ -195,7 +195,7 @@ V&V LEVEL SCALING:
 
 Complete documentation in this mandatory sequence:
 
-1. VARIABLE_DICTIONARY - Document all symbols first (prevents attention fatigue)
+1. SYMBOL_DICTIONARY - Document all symbols first (prevents attention fatigue)
 2. FILE HEADER - Overall purpose and architecture
 3. FUNCTION HEADERS - Document each function in order
 4. INLINE COMMENTS - Add detailed explanations for complex logic

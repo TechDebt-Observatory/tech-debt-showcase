@@ -1,4 +1,4 @@
-# AI Attribution Standards for Phase 1 v6
+# AI Attribution Standards
 
 ## Context: Open Source AI Contribution Guidelines
 

@@ -3,6 +3,10 @@
 
 The 7D Framework offers a systematic and revolutionary approach to documenting complex source code, transforming flat source files into a rich, multi-dimensional representation of your application's internal and external knowledge bases.
 
+## Ground Zero: Location and Definition
+
+Ground Zero is the point in the source code where context matters most—inline with the code itself, not in external documents. It is the location where code and its dimensional understanding coexist. When a developer modifies a function, debugs an issue, or reviews a change, Ground Zero is where they encounter both the code and the understanding required to work with it safely. GERs embedded at Ground Zero remain synchronized with code because they change when code changes. External documentation—wikis, design docs, architecture diagrams—can be out-of-date minutes after code is modified. Ground Zero documentation cannot.
+
 ### The Problem of Documentation Drift
 
 In software development, documentation is often relegated to external silos—Jira tickets, separate Doxygen files, or wiki pages. This practice creates an immediate state of **synchronization loss**, where the documentation quickly drifts out-of-sync with the live source code.
